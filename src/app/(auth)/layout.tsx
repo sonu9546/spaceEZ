@@ -1,10 +1,9 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { AppLogo, ThemeSwitcher, AppContainer } from '@/components/ui';
+import { AppLogo, AppContainer } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/routerKeys';
-import { SHOW_THEME_SWITCHER } from '@/config';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -15,7 +14,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 <header className="bg-card p-2 rounded-lg mt-4">
                     <div className="flex items-center justify-between">
                         <AppLogo onClick={() => { router.push(ROUTES.WELCOME.WELCOME) }} />
-                        {SHOW_THEME_SWITCHER && <ThemeSwitcher />}
                     </div>
                 </header>
 

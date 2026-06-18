@@ -1,6 +1,6 @@
 const SHOW_THEME_SWITCHER = false
 const SHOW_INSTALL_PROMPT = false
-const DEFAULT_THEME = 'dark'
+const DEFAULT_THEME = 'light'
 const DEFAULT_LANGUAGE = 'en'
 const SHOW_VERSION_UPDATE_NOTIFICATION = false
 const SHOW_SPLASH_SCREEN = false

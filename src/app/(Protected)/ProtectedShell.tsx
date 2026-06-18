@@ -3,8 +3,7 @@
 import React, { ReactNode, useState } from 'react'
 import { ConfigProvider, Layout, Drawer } from 'antd'
 import enUS from 'antd/locale/en_US'
-import { lightTheme, darkTheme } from "@/theme/antdTheme"
-import { useTheme } from "next-themes"
+import { lightTheme } from "@/theme/antdTheme"
 import ProtectedHeader from './ProtectedHeader'
 import Sidebar from './Sidebar'
 import PageTransition from '@/components/animations/PageTransition'
@@ -12,14 +11,13 @@ import PageTransition from '@/components/animations/PageTransition'
 const { Content } = Layout
 
 export default function ProtectedShell({ children }: { children: ReactNode }) {
-  const { theme } = useTheme()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileVisible, setMobileVisible] = useState(false)
 
   return (
     <ConfigProvider
       locale={enUS}
-      theme={theme === "dark" ? darkTheme : lightTheme}
+      theme={lightTheme}
       componentSize="middle"
     >
       <Layout className="h-screen bg-background transition-colors overflow-hidden">
