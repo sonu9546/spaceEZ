@@ -1,0 +1,58 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "AWS BRANCH = $AWS_BRANCH"
+
+        # Dev branch
+        - if [ "$AWS_BRANCH" = "master" ]; then cp .env.development .env; fi
+
+        # Production branch
+        - if [ "$AWS_BRANCH" = "main" ]; then cp .env.production .env; fi
+
+        # Debug output
+        - echo "========== USING .env FILE =========="
+        - cat .env
+        - echo "====================================="
+
+        # Install dependencies AFTER env is set
+        - npm clean-install
+
+    build:
+      commands:
+        - npm run build
+    
+    postBuild:
+      commands:
+        - echo "========== PWA FILES CHECK =========="
+        - ls -la public/sw.js || echo "sw.js not found"
+        - ls -la public/manifest.json || echo "manifest.json not found"
+        - echo "====================================="
+
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
+
+  customHeaders:
+    - pattern: '/sw.js'
+      headers:
+        - key: 'Cache-Control'
+          value: 'no-cache, no-store, must-revalidate'
+        - key: 'Service-Worker-Allowed'
+          value: '/'
+    - pattern: '/workbox-*.js'
+      headers:
+        - key: 'Cache-Control'
+          value: 'no-cache, no-store, must-revalidate'
+
+  environment:
+    AWS_BRANCH: $AWS_BRANCH
+
+  framework: next

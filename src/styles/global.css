@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/* Enable dark variant */
+@variant dark (&:where(.dark, .dark *));
+
+/* ===============================
+   THEME TOKENS (Tailwind v4)
+================================ */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}
+
+/* ===============================
+   BASE DESIGN TOKENS
+================================ */
+@layer base {
+  :root {
+    --background: #F8F6F0;
+    --foreground: #1F2937;
+
+    --card: #FFFFFF;
+    --card-foreground: #1F2937;
+
+    --primary: #22A652;
+    --primary-foreground: #ffffff;
+
+    --secondary: #062B52;
+    --secondary-foreground: #ffffff;
+
+    --border: #E5EAF2;
+    --ring: #22A652;
+
+    /* Custom variables requested by user */
+    --color-primary-blue: #062B52;
+    --color-primary-green: #22A652;
+    --color-background: #F8F6F0;
+    --color-surface: #FFFFFF;
+    --color-border: #E5EAF2;
+    --color-text-primary: #1F2937;
+    --color-text-secondary: #6B7280;
+    --color-hover-blue: #1E4E79;
+    --color-light-green: #DDF5E5;
+  }
+
+  .dark {
+    --background: #0d121f;
+    --foreground: #f3f4f6;
+
+    --card: #141b2d;
+    --card-foreground: #f3f4f6;
+
+    --primary: #22A652;
+    --primary-foreground: #ffffff;
+
+    --secondary: #062B52;
+    --secondary-foreground: #ffffff;
+
+    --border: #232d42;
+    --ring: #22A652;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-plus-jakarta-sans), var(--font-inter), sans-serif;
+  }
+
+  h1 {
+    @apply text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-medium;
+  }
+
+  p {
+    @apply p-0 m-0;
+  }
+}
+
+/* Respect system UI */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+/* ===============================
+   COMPONENT CLASSES
+================================ */
+
+/* Online/Offline Status Messages */
+.custom-offline-message .ant-message-notice-content {
+  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+  color: white;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+  animation: slideInDown 0.3s ease-out;
+}
+
+.custom-online-message .ant-message-notice-content {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  color: white;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@layer components {
+  .authCard {
+    @apply w-full max-w-lg rounded-lg border border-border bg-card text-card-foreground shadow-sm p-4;
+  }
+
+  .whiteText {
+    @apply text-white;
+  }
+
+  .blackText {
+    @apply text-black dark:text-white;
+  }
+}
