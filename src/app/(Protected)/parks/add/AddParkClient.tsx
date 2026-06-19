@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Select, Image } from 'antd'
+import { Select } from 'antd'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import CityParkSidebar from '../../dashboard/CityParkSidebar'
@@ -344,7 +344,8 @@ export default function AddParkClient() {
                 <div className="border-2 border-dashed border-[#bdcaba]/60 rounded-xl p-5 text-center bg-[#F8FAFC] hover:bg-slate-50 transition-colors flex flex-col items-center justify-center cursor-pointer">
                   {coverPhoto ? (
                     <div className="relative w-full h-32 rounded-lg overflow-hidden border">
-                      <Image src={coverPhoto} alt="Cover Preview" className="w-full h-full object-cover animate-fade-in" preview={false} />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={coverPhoto} alt="Cover Preview" className="w-full h-full object-cover" />
                       <button
                         onClick={(e) => { e.stopPropagation(); setCoverPhoto(null) }}
                         className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
@@ -381,11 +382,11 @@ export default function AddParkClient() {
               <div className="bg-white p-4 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_10px_rgba(0,0,0,0.01)] space-y-3">
                 <h4 className="text-xs font-bold text-[#0b1c30] uppercase">Locational Preview</h4>
                 <div className="h-56 rounded-xl overflow-hidden relative border bg-slate-100">
-                  <Image
-                    className="w-full h-full object-cover animate-fade-in"
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="w-full h-full object-cover"
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtyxagyNUrwu1RJZEoB9eMqm34_D5ithTKVax7YNh9RYLecHJhlPEJS-TW85btJ2iD4n--qOvOLonkSeI9yuFDud0Fu44u9OzfQA89Sa12oq31pGclaOdn_cvif9cj4T7yLHoBXUvYw1NZpGqw35328HH5ykekct3fW4TjxnJS-5SkRXqqT_R-qwEJHOMWr9RcjoPJB5Ton_sw2dKmbDdulF7FNq660F6VVNkoYcVGwUsaSse5bxTD6c0HOYtsRkkqEcM8py8X-7fB"
-                    alt="Live Map View"
-                    preview={false}
+                    alt="Map Preview"
                   />
                   <div className="absolute inset-0 bg-[#0b1c30]/10 flex items-center justify-center">
                     <div className="bg-white px-3 py-1.5 rounded-full shadow-lg border-2 border-[#006b2c] flex items-center gap-1.5 animate-bounce">

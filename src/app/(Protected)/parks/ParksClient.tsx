@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Image } from "antd";
+
 
 import CityParkSidebar from "../dashboard/CityParkSidebar";
 import CityParkHeader from "../dashboard/CityParkHeader";
@@ -343,11 +343,11 @@ export default function ParksClient() {
                           >
                             <td className="px-6 py-4.5">
                               <div className="flex items-center gap-3">
-                                <Image
-                                  className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0 animate-fade-in"
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0"
                                   src={park.imageUrl}
                                   alt={park.name}
-                                  preview={false}
                                 />
                                 <div>
                                   <span className="font-bold text-[#0b1c30] block text-sm">
@@ -433,11 +433,11 @@ export default function ParksClient() {
                   {/* Photo & Status */}
                   <div className="space-y-4">
                     <div className="h-40 w-full rounded-xl overflow-hidden relative border border-slate-100">
-                      <Image
-                        className="w-full h-full object-cover animate-fade-in"
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className="w-full h-full object-cover"
                         src={selectedPark.imageUrl}
                         alt={selectedPark.name}
-                        preview={false}
                       />
                     </div>
 

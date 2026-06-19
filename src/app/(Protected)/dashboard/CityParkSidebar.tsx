@@ -14,14 +14,14 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname()
 
   const navItems = [
-    { name: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
-    { name: 'Parks', icon: 'park', href: '/parks' },
+    { name: 'Dashboard', icon: "\uE871", href: '/dashboard' },
+    { name: 'Parks', icon: "\uEA63", href: '/parks' },
   ]
 
   const logout = useLogout()
 
   const bottomItems = [
-    { name: 'Help Center', icon: 'help', href: '#', isLogout: false },
+    { name: 'Help Center', icon: "\uE8FD", href: '#', isLogout: false },
   ]
 
   return (
@@ -32,7 +32,7 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
         {/* Brand Header */}
         <div className="mb-8 px-2 flex items-center gap-3">
           <div className="w-10 h-10 bg-[#006b2c] rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm">
-            <span className="material-symbols-outlined font-semibold text-2xl">park</span>
+            <span className="material-symbols-outlined font-semibold text-2xl">{"\uEA63"}</span>
           </div>
           <div>
             <h1 className="font-bold text-lg text-[#006b2c] leading-tight">CityParkON</h1>
@@ -98,7 +98,7 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
             onClick={() => logout()}
             className="w-full flex items-center gap-4 px-4 py-2.5 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50"
           >
-            <span className="material-symbols-outlined text-red-500">logout</span>
+            <span className="material-symbols-outlined text-red-500">{"\uE9BA"}</span>
             <span className="text-sm font-medium">Logout</span>
           </button>
         </div>
