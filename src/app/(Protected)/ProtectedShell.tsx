@@ -7,12 +7,30 @@ import { lightTheme } from "@/theme/antdTheme"
 import ProtectedHeader from './ProtectedHeader'
 import Sidebar from './Sidebar'
 import PageTransition from '@/components/animations/PageTransition'
+import { usePathname } from 'next/navigation'
 
 const { Content } = Layout
 
 export default function ProtectedShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileVisible, setMobileVisible] = useState(false)
+  const pathname = usePathname()
+
+  const isCityPark = pathname?.startsWith('/dashboard') || pathname?.startsWith('/parks')
+
+  if (isCityPark) {
+    return (
+      <ConfigProvider
+        locale={enUS}
+        theme={lightTheme}
+        componentSize="middle"
+      >
+        <div className="w-full h-full min-h-screen bg-[#F8FAFC] overflow-x-hidden">
+          {children}
+        </div>
+      </ConfigProvider>
+    )
+  }
 
   return (
     <ConfigProvider

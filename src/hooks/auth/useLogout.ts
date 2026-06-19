@@ -18,6 +18,6 @@ export function useLogout() {
     dispatch(logout());
 
     // Redirect to login
-    router.replace(ROUTES.WELCOME.WELCOME);
+    router.replace(ROUTES.AUTH.LOGIN);
   };
 }

@@ -1,5 +1,8 @@
 const QUERY_KEYS = {
     USER: "user",
+    PARKS: "parks",
+    RESERVATIONS: "reservations",
+    CHECKINS: "checkins",
 }
 
 const MUTATION_KEYS = {
@@ -12,6 +15,7 @@ const MUTATION_KEYS = {
     FORGOT_PASSWORD: "forgot-password",
     RESET_PASSWORD: "reset-password",
     CHANGE_PASSWORD: "change-password",
+    PUBLISH_PARK: "publish-park",
 }
 
 export { QUERY_KEYS, MUTATION_KEYS }

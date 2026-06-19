@@ -7,7 +7,9 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     LogoutOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
+    DashboardOutlined,
+    PlusCircleOutlined
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { ROUTES } from '@/routerKeys'
@@ -61,6 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, className })
             key: ROUTES.PRIVATE.HOME,
             icon: <BankOutlined />,
             label: 'Venues',
+        },
+        {
+            key: ROUTES.PRIVATE.DASHBOARD,
+            icon: <DashboardOutlined />,
+            label: 'CityParkON Dashboard',
+        },
+        {
+            key: ROUTES.PRIVATE.ADD_PARK,
+            icon: <PlusCircleOutlined />,
+            label: 'Add New Park',
         },
     ]
 

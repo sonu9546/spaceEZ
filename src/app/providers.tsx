@@ -26,7 +26,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               theme={lightTheme}
             >
               <Toaster position="top-right" />
-              <CentralLoader />
+              {/* <CentralLoader /> */}
               {children}
             </ConfigProvider>
           </AntdRegistry>

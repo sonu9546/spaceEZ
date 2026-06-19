@@ -19,6 +19,9 @@ export function middleware(req: NextRequest) {
     ROUTES.PRIVATE.HOME,
     ROUTES.PRIVATE.PROFILE,
     ROUTES.PRIVATE.SETTING,
+    ROUTES.PRIVATE.DASHBOARD,
+    ROUTES.PRIVATE.PARKS,
+    ROUTES.PRIVATE.ADD_PARK,
   ];
 
   // Logged-in user visiting auth pages → redirect home
@@ -54,6 +57,9 @@ export const config = {
     '/home',
     '/profile',
     '/setting',
+    '/dashboard',
+    '/parks',
+    '/parks/:path*',
   ],
 };
 

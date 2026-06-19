@@ -1,15 +1,5 @@
-import { generateSEO } from "@/lib/seo"
-import DashboardClient from "./DashboardClient"
+import { redirect } from 'next/navigation'
 
-export const metadata = generateSEO({
-  title: "Home",
-  description: "Learn how SpaceEZ simplifies venue booking and management.",
-  path: "/home",
-  keywords: ["SpaceEZ", "Home", "Venue Booking"],
-});
-
-
-// SERVER COMPONENT
-export default function DashboardPage() {
-  return <DashboardClient />
+export default function HomePage() {
+  redirect('/dashboard')
 }

@@ -13,9 +13,12 @@ export const ROUTES = {
 
     // Protected group
     PRIVATE:{
-        HOME: "/home",
+        HOME: "/dashboard",
         PROFILE: "/profile",
         SETTING:"/setting",
+        DASHBOARD: "/dashboard",
+        PARKS: "/parks",
+        ADD_PARK: "/parks/add",
     },
 
     // Common public pages

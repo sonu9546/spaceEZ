@@ -154,3 +154,19 @@
     @apply text-black dark:text-white;
   }
 }
+
+/* ===============================
+   GREEN BUTTON → WHITE TEXT RULE
+================================ */
+button[class*="bg-[#006b2c]"],
+button[class*="bg-[#00873a]"],
+button[class*="bg-[#22A652]"],
+button[class*="bg-green"],
+button[class*="bg-emerald"] {
+  color: #ffffff !important;
+}
+
+/* Ant Design buttons with primary/green theme */
+.ant-btn-primary {
+  color: #ffffff !important;
+}
