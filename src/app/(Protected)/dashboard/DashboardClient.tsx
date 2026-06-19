@@ -5,22 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import CityParkSidebar from './CityParkSidebar'
 import CityParkHeader from './CityParkHeader'
 import { mockFacilities, Facility, getStoredFacilities } from './mockData'
-import { useAppQuery } from '@/tanstack/useAppQuery'
-import { QUERY_KEYS } from '@/tanstack/keys'
-
+import { Image } from 'antd'
 export default function DashboardClient() {
-  const { data: queryResponse } = useAppQuery<Facility[]>({
-    queryKey: [QUERY_KEYS.PARKS],
-    url: '/parks',
-    showErrorToast: false,
-    options: {
-      initialData: {
-        status: 200,
-        message: 'Loaded cached data',
-        data: mockFacilities
-      }
-    }
-  })
 
   const [facilities, setFacilities] = useState<Facility[]>([])
 
@@ -37,7 +23,7 @@ export default function DashboardClient() {
   const [hoveredPinId, setHoveredPinId] = useState<string | null>(null)
   
   // Chart and statistics interactions
-  const [activeSegment, setActiveSegment] = useState<number | null>(null)
+
 
   const selectedFacility = facilities.find((f) => f.id === selectedId) || facilities[0] || mockFacilities[0]
 
@@ -85,13 +71,7 @@ export default function DashboardClient() {
 
 
 
-  const sportsDistribution = [
-    { name: 'Cricket', percentage: 35, color: '#16A34A' },
-    { name: 'Football', percentage: 25, color: '#2563EB' },
-    { name: 'Badminton', percentage: 20, color: '#F59E0B' },
-    { name: 'Tennis', percentage: 15, color: '#EF4444' },
-    { name: 'Others', percentage: 5, color: '#94A3B8' },
-  ]
+
 
   // Status mapping UI helper
   const statusStyles = {
@@ -173,10 +153,11 @@ export default function DashboardClient() {
 
               {/* Map Placeholder Image */}
               <div className="h-80 w-full relative rounded-xl overflow-hidden border border-slate-200/60 shadow-inner bg-slate-50">
-                <img
-                  className="w-full h-full object-cover select-none pointer-events-none"
+                <Image
+                  className="w-full h-full object-cover select-none pointer-events-none animate-fade-in"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYphNUeWqHukKfvcOh0Dm0qowmOtooKpVwk59IALgkOlwwKYQulWu5CwocDAOiidi65iJwTRbA8x87yAtADTdGjTWQAXp4WHwO-YkBCLcMDgA56Q2pz8xfPH-pWMZmh-0l54JTep6EVcqUmjJYYm9UDi5yhDR1zH1gb6t3CDafE7BtG135W8MZjjCQ46ot4ZgucjIqB0Hc5DvU6ZpOfG9vBYgQuW-D4nQP6e7X8_WfQ6RPzoqMPrvAvAzmQcM9EgOuuWtBWPMtSoXR"
                   alt="Live Map View"
+                  preview={false}
                 />
 
                 {/* Overlaid Interactive Markers */}
@@ -271,10 +252,11 @@ export default function DashboardClient() {
                 {/* Heading / Photo */}
                 <div className="space-y-4">
                   <div className="h-44 w-full rounded-xl overflow-hidden relative border border-slate-100">
-                    <img
-                      className="w-full h-full object-cover"
+                    <Image
+                      className="w-full h-full object-cover animate-fade-in"
                       src={selectedFacility.imageUrl}
                       alt={selectedFacility.name}
+                      preview={false}
                     />
                     <div className="absolute top-3 left-3">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -319,10 +301,11 @@ export default function DashboardClient() {
 
                 {/* QR Code Action Card */}
                 <div className="bg-[#eff4ff]/60 border border-[#bdcaba]/20 rounded-xl p-4 flex items-center gap-4">
-                  <img
-                    className="w-16 h-16 rounded-lg bg-white border border-slate-200 p-1 shrink-0"
+                  <Image
+                    className="w-16 h-16 rounded-lg bg-white border border-slate-200 p-1 shrink-0 animate-fade-in"
                     src={selectedFacility.qrCodeUrl}
                     alt="QR Code"
+                    preview={false}
                   />
                   <div className="flex-1 space-y-1">
                     <h4 className="text-xs font-bold text-[#0b1c30]">QR Check-in Code</h4>

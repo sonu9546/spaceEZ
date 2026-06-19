@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { Image } from 'antd'
 
 interface HeaderProps {
   title?: string
@@ -46,9 +46,10 @@ export default function CityParkHeader({
 
         {/* Profile Avatar */}
         <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-[#bdcaba]/40 shadow-inner">
-          <img
+          <Image
             className="w-full h-full object-cover"
             alt="Admin Profile"
+            preview={false}
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvJXcOvQ_wF_SX7ijQRuvw0r-XpDKSuZpwWIzUo-X3aPo-jztY1Ps18hVGs1Pwu38pXV2dddG9FIqCjLevMZ2WWkWZ8sgiktHNHv3bmWfJmlJgY432PyASZNNWh4QsWH0ANIu0sDh16gHNzdM7GBSKRK8o0tPzZNr0JSz-TyA8EOHCR7cBpwPfkVm27UEbEK9Thd69G2YbkZTuVjvBvqFF8i_AD_ugDlu8GhCJtVhiaQOR6N_En9xA0dO8jxo2-bBmlzWMVUadMDxt"
           />
         </div>

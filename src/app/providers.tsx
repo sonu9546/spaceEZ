@@ -9,7 +9,7 @@ import { Toaster } from 'react-hot-toast'
 import enUS from 'antd/locale/en_US'
 import { AntdRegistry } from '@ant-design/nextjs-registry'
 import { lightTheme } from '@/theme/antdTheme'
-import CentralLoader from '@/components/ui/feedback/CentralLoader'
+
 import { persistor, store } from '@/redux/store/store'
 
 const queryClient = new QueryClient()

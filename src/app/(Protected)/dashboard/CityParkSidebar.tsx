@@ -26,11 +26,7 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
 
   return (
     <>
-      {/* Inject Material Symbols stylesheet if not loaded */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet"
-      />
+
 
       <aside className={`fixed left-0 top-0 h-full w-[260px] bg-white border-r border-[#bdcaba]/40 flex flex-col py-6 px-4 z-50 ${className}`}>
         {/* Brand Header */}

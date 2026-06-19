@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { Image } from "antd";
+
 import CityParkSidebar from "../dashboard/CityParkSidebar";
 import CityParkHeader from "../dashboard/CityParkHeader";
 import {
@@ -14,10 +15,8 @@ import { useAppQuery } from "@/tanstack/useAppQuery";
 import { QUERY_KEYS } from "@/tanstack/keys";
 
 export default function ParksClient() {
-  const router = useRouter();
-
   // Fetch facilities using our TanStack query hook
-  const { data: queryResponse } = useAppQuery<Facility[]>({
+  const { data: _queryResponse } = useAppQuery<Facility[]>({
     queryKey: [QUERY_KEYS.PARKS],
     url: "/parks",
     showErrorToast: false,
@@ -344,10 +343,11 @@ export default function ParksClient() {
                           >
                             <td className="px-6 py-4.5">
                               <div className="flex items-center gap-3">
-                                <img
-                                  className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0"
+                                <Image
+                                  className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0 animate-fade-in"
                                   src={park.imageUrl}
                                   alt={park.name}
+                                  preview={false}
                                 />
                                 <div>
                                   <span className="font-bold text-[#0b1c30] block text-sm">
@@ -433,10 +433,11 @@ export default function ParksClient() {
                   {/* Photo & Status */}
                   <div className="space-y-4">
                     <div className="h-40 w-full rounded-xl overflow-hidden relative border border-slate-100">
-                      <img
-                        className="w-full h-full object-cover"
+                      <Image
+                        className="w-full h-full object-cover animate-fade-in"
                         src={selectedPark.imageUrl}
                         alt={selectedPark.name}
+                        preview={false}
                       />
                     </div>
 

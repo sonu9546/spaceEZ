@@ -115,7 +115,7 @@ export const getStoredFacilities = (): Facility[] => {
   }
   try {
     return JSON.parse(stored);
-  } catch (e) {
+  } catch {
     return mockFacilities;
   }
 };
