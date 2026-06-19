@@ -29,6 +29,7 @@ export default function ParksClient() {
     },
   });
 
+  
   const [facilities, setFacilities] = useState<Facility[]>([]);
 
   useEffect(() => {
