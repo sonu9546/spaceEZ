@@ -13,6 +13,7 @@ import {
 } from "../dashboard/mockData";
 import { useAppQuery } from "@/tanstack/useAppQuery";
 import { QUERY_KEYS } from "@/tanstack/keys";
+import { useSearchParams } from "next/navigation";
 
 export default function ParksClient() {
   // Fetch facilities using our TanStack query hook
@@ -41,7 +42,17 @@ export default function ParksClient() {
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sportFilter, setSportFilter] = useState<string>("ALL");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+
+  const searchParams = useSearchParams();
+  const sportParam = searchParams ? searchParams.get("sport") : null;
+
+  useEffect(() => {
+    if (sportParam) {
+      setSportFilter(sportParam.toUpperCase());
+    } else {
+      setSportFilter("ALL");
+    }
+  }, [sportParam]);
 
   // Selected Park state
   const [selectedParkName, setSelectedParkName] = useState<string | null>(null);
@@ -67,7 +78,7 @@ export default function ParksClient() {
           firstFac?.imageUrl ||
           "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=600&auto=format&fit=crop&q=80",
         address: firstFac?.address || "SpaceEZ Park Partner • Municipal Zone",
-        description: `${parkName} is a premium community space with multiple games and amenities, managed by SpaceEZ.`,
+        description: `${parkName} is a premium community space with multiple sports and amenities, managed by SpaceEZ.`,
       };
     });
   }, [facilities]);
@@ -76,18 +87,49 @@ export default function ParksClient() {
     return groupedParks.find((p) => p.name === selectedParkName) || null;
   }, [groupedParks, selectedParkName]);
 
+  // Categories State
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const loadCats = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('cityparkon_categories');
+        if (stored) {
+          try {
+            setCategories(JSON.parse(stored));
+          } catch {
+            const defaults = ['Tennis', 'Football', 'Cricket', 'Badminton', 'Aquatics'];
+            localStorage.setItem('cityparkon_categories', JSON.stringify(defaults));
+            setCategories(defaults);
+          }
+        } else {
+          const defaults = ['Tennis', 'Football', 'Cricket', 'Badminton', 'Aquatics'];
+          localStorage.setItem('cityparkon_categories', JSON.stringify(defaults));
+          setCategories(defaults);
+        }
+      }
+    };
+    
+    loadCats();
+    window.addEventListener('categories-changed', loadCats);
+    return () => {
+      window.removeEventListener('categories-changed', loadCats);
+    };
+  }, []);
+
   // Edit Facility States
   const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
   const [editSubname, setEditSubname] = useState("");
-  const [editSportType, setEditSportType] = useState<Facility["sportType"]>("Tennis");
+  const [editSportType, setEditSportType] = useState<string>("Tennis");
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editStatus, setEditStatus] = useState<"AVAILABLE" | "UNAVAILABLE" | "MAINTENANCE" | "RESERVED">("AVAILABLE");
 
   // Add Facility States
   const [showAddGameForm, setShowAddGameForm] = useState(false);
   const [newGameSubname, setNewGameSubname] = useState("");
-  const [newGameSportType, setNewGameSportType] = useState<Facility["sportType"]>("Tennis");
+  const [newGameSportType, setNewGameSportType] = useState<string>("Tennis");
   const [newGamePrice, setNewGamePrice] = useState<number>(15);
+  const [activeQrFacility, setActiveQrFacility] = useState<Facility | null>(null);
 
   // Filter Logic based on grouped parks
   const filteredParks = React.useMemo(() => {
@@ -106,13 +148,9 @@ export default function ParksClient() {
           (f) => f.sportType.toUpperCase() === sportFilter.toUpperCase(),
         );
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        park.facilities.some((f) => f.status === statusFilter);
-
-      return matchesSearch && matchesSport && matchesStatus;
+      return matchesSearch && matchesSport;
     });
-  }, [groupedParks, searchTerm, sportFilter, statusFilter]);
+  }, [groupedParks, searchTerm, sportFilter]);
 
   // Status Styles mapping
   const statusStyles = {
@@ -203,7 +241,7 @@ export default function ParksClient() {
         {
           id: `log-${Date.now()}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `Game facility added to ${selectedParkName}`,
+          text: `Amenity facility added to ${selectedParkName}`,
           type: "success"
         }
       ]
@@ -217,13 +255,37 @@ export default function ParksClient() {
   };
 
   // Handle PNG download
-  const handleDownloadQR = (name: string, url: string) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${name.replace(/\s+/g, "_")}_QR_Code.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadQR = async (name: string, url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `${name.replace(/\s+/g, "_")}_QR_Code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Failed to download QR code:", error);
+      // Fallback: open in a new window/tab
+      window.open(url, "_blank");
+    }
+  };
+
+  const handleDeletePark = (parkName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${parkName}" and all of its amenities?`)) {
+      const updated = facilities.filter((f) => {
+        const pName = f.name.split(" - ")[0] || f.name;
+        return pName !== parkName;
+      });
+      setFacilities(updated);
+      localStorage.setItem("cityparkon_facilities", JSON.stringify(updated));
+      if (selectedParkName === parkName) {
+        setSelectedParkName(null);
+      }
+    }
   };
 
   return (
@@ -271,30 +333,17 @@ export default function ParksClient() {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Sport Type Filter */}
                 <select
                   value={sportFilter}
                   onChange={(e) => setSportFilter(e.target.value)}
                   className="text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#006b2c] text-slate-700 font-semibold"
                 >
                   <option value="ALL">All Sports</option>
-                  <option value="TENNIS">Tennis</option>
-                  <option value="FOOTBALL">Football</option>
-                  <option value="CRICKET">Cricket</option>
-                  <option value="BADMINTON">Badminton</option>
-                </select>
-
-                {/* Status Filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#006b2c] text-slate-700 font-semibold"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="AVAILABLE">Available</option>
-                  <option value="RESERVED">Reserved</option>
-                  <option value="MAINTENANCE">Maintenance</option>
-                  <option value="UNAVAILABLE">Unavailable</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat.toUpperCase()}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -306,9 +355,7 @@ export default function ParksClient() {
                   <thead>
                     <tr className="bg-slate-50 border-b border-[#bdcaba]/20 text-[10px] font-bold text-[#545f73] uppercase tracking-wider">
                       <th className="px-6 py-4">Park Name / Location</th>
-                      <th className="px-6 py-4">Total Games / Courts</th>
-                      <th className="px-6 py-4">Sports Available</th>
-                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Amenities</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -316,7 +363,7 @@ export default function ParksClient() {
                     {filteredParks.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={3}
                           className="px-6 py-12 text-center text-slate-400"
                         >
                           <span className="material-symbols-outlined text-4xl block mb-2 text-slate-300">
@@ -328,17 +375,12 @@ export default function ParksClient() {
                     ) : (
                       filteredParks.map((park) => {
                         const isSelected = selectedParkName === park.name;
-                        const isAvailable = park.facilities.some(f => f.status === 'AVAILABLE' || f.status === 'RESERVED');
-                        const statusLabel = isAvailable ? "Available" : "Maintenance";
-                        const statusColor = isAvailable ? "bg-[#16A34A]/10 text-[#16A34A]" : "bg-[#F59E0B]/10 text-[#F59E0B]";
-                        
-                        // Get unique sports
-                        const uniqueSports = Array.from(new Set(park.facilities.map(f => f.sportType)));
 
                         return (
                           <tr
                             key={park.id}
-                            className={`hover:bg-slate-50/80 transition-colors ${
+                            onClick={() => setSelectedParkName(isSelected ? null : park.name)}
+                            className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${
                               isSelected ? "bg-[#eff4ff]/35" : ""
                             }`}
                           >
@@ -361,35 +403,20 @@ export default function ParksClient() {
                               </div>
                             </td>
                             <td className="px-6 py-4.5 font-semibold text-slate-700">
-                              {park.facilities.length} {park.facilities.length === 1 ? 'game' : 'games'}
-                            </td>
-                            <td className="px-6 py-4.5">
-                              <div className="flex flex-wrap gap-1">
-                                {uniqueSports.map((sport) => (
-                                  <span
-                                    key={sport}
-                                    className="px-1.5 py-0.5 bg-slate-100 text-slate-700 text-[9px] font-extrabold rounded uppercase tracking-wider"
-                                  >
-                                    {sport}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4.5">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>
-                                {statusLabel}
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-800 transition-colors duration-150 border border-slate-200/80">
+                                {park.facilities.length} {park.facilities.length === 1 ? 'amenity' : 'amenities'}
                               </span>
                             </td>
-                            <td className="px-6 py-4.5 text-right">
+                            <td className="px-6 py-4.5 text-right flex justify-end">
                               <button
-                                onClick={() => setSelectedParkName(isSelected ? null : park.name)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                  isSelected
-                                    ? "bg-[#006b2c] text-white shadow-sm"
-                                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePark(park.name);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
                               >
-                                {isSelected ? "Viewing" : "Inspect"}
+                                <span className="material-symbols-outlined text-sm">{"\uE872"}</span>
+                                Delete
                               </button>
                             </td>
                           </tr>
@@ -456,11 +483,11 @@ export default function ParksClient() {
                     </p>
                   </div>
 
-                  {/* Section: Games / Facilities */}
+                  {/* Section: Amenities / Facilities */}
                   <div className="border-t border-[#bdcaba]/20 pt-4 space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider">
-                        Games & Amenities ({selectedPark.facilities.length})
+                        Amenities ({selectedPark.facilities.length})
                       </h4>
                       {!showAddGameForm && (
                         <button
@@ -468,16 +495,16 @@ export default function ParksClient() {
                           className="text-[10px] font-bold text-[#006b2c] hover:underline flex items-center gap-0.5"
                         >
                           <span className="material-symbols-outlined text-xs">add</span>
-                          Add Game
+                          Add Amenity
                         </button>
                       )}
                     </div>
 
-                    {/* Add Game Form Inline */}
+                    {/* Add Amenity Form Inline */}
                     {showAddGameForm && (
                       <div className="p-4 rounded-xl border border-dashed border-[#bdcaba]/60 bg-slate-50/50 space-y-3">
                         <h5 className="text-[11px] font-bold text-[#0b1c30] uppercase tracking-wider">
-                          New Game Facility
+                          New Amenity Facility
                         </h5>
                         <div className="space-y-2">
                           <div>
@@ -499,13 +526,14 @@ export default function ParksClient() {
                               </label>
                               <select
                                 value={newGameSportType}
-                                onChange={(e) => setNewGameSportType(e.target.value as Facility["sportType"])}
+                                onChange={(e) => setNewGameSportType(e.target.value)}
                                 className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c] bg-white font-medium"
                               >
-                                <option value="Tennis">Tennis</option>
-                                <option value="Football">Football</option>
-                                <option value="Cricket">Cricket</option>
-                                <option value="Badminton">Badminton</option>
+                                {categories.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {cat}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                             <div>
@@ -532,13 +560,13 @@ export default function ParksClient() {
                             onClick={handleAddGame}
                             className="px-2.5 py-1.5 text-[10px] font-bold bg-[#006b2c] text-white rounded-lg hover:bg-[#005221]"
                           >
-                            Add Game
+                            Add Amenity
                           </button>
                         </div>
                       </div>
                     )}
 
-                    {/* Games List */}
+                    {/* Amenities List */}
                     <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                       {selectedPark.facilities.map((game) => {
                         const isEditing = editingFacilityId === game.id;
@@ -552,7 +580,7 @@ export default function ParksClient() {
                             >
                               <div>
                                 <label className="text-[9px] font-bold text-[#545f73] block mb-0.5">
-                                  Game/Court Name
+                                  Amenity/Court Name
                                 </label>
                                 <input
                                   type="text"
@@ -569,13 +597,14 @@ export default function ParksClient() {
                                   </label>
                                   <select
                                     value={editSportType}
-                                    onChange={(e) => setEditSportType(e.target.value as Facility["sportType"])}
+                                    onChange={(e) => setEditSportType(e.target.value)}
                                     className="w-full text-[10px] px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#006b2c] bg-white font-medium"
                                   >
-                                    <option value="Tennis">Tennis</option>
-                                    <option value="Football">Football</option>
-                                    <option value="Cricket">Cricket</option>
-                                    <option value="Badminton">Badminton</option>
+                                    {categories.map((cat) => (
+                                      <option key={cat} value={cat}>
+                                        {cat}
+                                      </option>
+                                    ))}
                                   </select>
                                 </div>
                                 <div>
@@ -675,9 +704,9 @@ export default function ParksClient() {
 
                               <div className="flex items-center gap-3 font-bold text-slate-600">
                                 <button
-                                  onClick={() => handleDownloadQR(game.name, game.qrCodeUrl)}
+                                  onClick={() => setActiveQrFacility(game)}
                                   className="hover:text-[#006b2c] flex items-center gap-0.5"
-                                  title="Download QR Code"
+                                  title="View QR Code"
                                 >
                                   <span className="material-symbols-outlined text-sm">qr_code_2</span>
                                   QR
@@ -709,6 +738,71 @@ export default function ParksClient() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* QR Code Modal Overlay */}
+      <AnimatePresence>
+        {activeQrFacility && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative space-y-4 text-center border border-slate-100 animate-in fade-in zoom-in-95 duration-200"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveQrFacility(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+
+              <div className="pt-2">
+                <span className="material-symbols-outlined text-4xl text-[#006b2c] bg-[#eff4ff] p-3 rounded-full">
+                  qr_code_2
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-extrabold text-[#0b1c30] text-base">
+                  Facility QR Code
+                </h3>
+                <p className="text-xs text-[#545f73] mt-1 font-medium">
+                  {activeQrFacility.name}
+                </p>
+              </div>
+
+              {/* QR Image Box */}
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 flex items-center justify-center mx-auto w-48 h-48">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={activeQrFacility.qrCodeUrl}
+                  alt={`${activeQrFacility.name} QR Code`}
+                  className="w-full h-full object-contain mix-blend-multiply"
+                />
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    handleDownloadQR(activeQrFacility.name, activeQrFacility.qrCodeUrl);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-[#006b2c] hover:bg-[#006b2c]/95 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">{"\uE2C4"}</span>
+                  Download QR Code
+                </button>
+                <button
+                  onClick={() => setActiveQrFacility(null)}
+                  className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

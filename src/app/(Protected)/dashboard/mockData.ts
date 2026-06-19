@@ -1,7 +1,7 @@
 export interface Facility {
   id: string;
   name: string;
-  sportType: 'Tennis' | 'Football' | 'Cricket' | 'Badminton' | 'Aquatics';
+  sportType: string;
   status: 'AVAILABLE' | 'UNAVAILABLE' | 'MAINTENANCE' | 'RESERVED';
   pricePerHour: number;
   activeBookings: number;

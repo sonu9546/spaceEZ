@@ -72,6 +72,7 @@ export default function AddParkClient() {
   const [selectedAmenityToPlace, setSelectedAmenityToPlace] = useState<string>('amenity-1')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [mapActiveAmenityId, setMapActiveAmenityId] = useState<string | null>(null)
+  const [activeQrAmenity, setActiveQrAmenity] = useState<any | null>(null)
 
   const handleSaveToLocalStorage = () => {
     const newFacilities = amenities.map((a, index) => {
@@ -161,6 +162,24 @@ export default function AddParkClient() {
       })
     )
   }
+
+  const handleDownloadQR = async (name: string, url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `${name.replace(/\s+/g, "_")}_QR_Code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Failed to download QR code:", error);
+      window.open(url, "_blank");
+    }
+  };
 
   // Step 3 map placement simulation
   const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -514,19 +533,7 @@ export default function AddParkClient() {
                       <button
                         onClick={() => {
                           handleGenerateQR(item.id)
-                          const params = new URLSearchParams({
-                            id: item.id,
-                            name: item.name,
-                            park: parkName,
-                            sport: item.sportType,
-                          })
-                          const a = document.createElement('a')
-                          a.href = `/parks/qr?${params.toString()}`
-                          a.target = '_blank'
-                          a.rel = 'noopener noreferrer'
-                          document.body.appendChild(a)
-                          a.click()
-                          document.body.removeChild(a)
+                          setActiveQrAmenity(item)
                         }}
                         
                         disabled={!item.name}
@@ -1119,6 +1126,84 @@ export default function AddParkClient() {
                     Confirm &amp; Apply
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal Overlay */}
+      <AnimatePresence>
+        {activeQrAmenity && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative space-y-4 text-center border border-[#bdcaba]/30"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveQrAmenity(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+
+              <div className="pt-2">
+                <span className="material-symbols-outlined text-4xl text-[#006b2c] bg-[#eff4ff] p-3 rounded-full">
+                  qr_code_2
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-extrabold text-[#0b1c30] text-base">
+                  Facility QR Code
+                </h3>
+                <p className="text-xs text-[#545f73] mt-1 font-medium">
+                  {activeQrAmenity.name}
+                </p>
+                {parkName && (
+                  <p className="text-[10px] text-[#545f73] font-medium">
+                    {parkName}
+                  </p>
+                )}
+              </div>
+
+              {/* QR Image Box */}
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 flex items-center justify-center mx-auto w-48 h-48">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                    `spaceez://amenity/${activeQrAmenity.id}?park=${encodeURIComponent(
+                      parkName || 'Park'
+                    )}&name=${encodeURIComponent(activeQrAmenity.name || 'Amenity')}`
+                  )}`}
+                  alt={`${activeQrAmenity.name} QR Code`}
+                  className="w-full h-full object-contain mix-blend-multiply"
+                />
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const qrVal = `spaceez://amenity/${activeQrAmenity.id}?park=${encodeURIComponent(
+                      parkName || 'Park'
+                    )}&name=${encodeURIComponent(activeQrAmenity.name || 'Amenity')}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrVal)}`;
+                    handleDownloadQR(activeQrAmenity.name || 'Amenity', qrUrl);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-[#006b2c] hover:bg-[#006b2c]/95 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">{"\uE2C4"}</span>
+                  Download QR Code
+                </button>
+                <button
+                  onClick={() => setActiveQrAmenity(null)}
+                  className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           </div>
