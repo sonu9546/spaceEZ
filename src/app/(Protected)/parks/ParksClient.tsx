@@ -423,41 +423,6 @@ export default function ParksClient() {
     });
   }, [groupedParks, searchTerm, sportFilter]);
 
-  // Status Styles mapping
-  const statusStyles = {
-    AVAILABLE: {
-      bg: "bg-[#16A34A]/10",
-      text: "text-[#16A34A]",
-      label: "Available",
-    },
-    RESERVED: {
-      bg: "bg-[#2563EB]/10",
-      text: "text-[#2563EB]",
-      label: "Reserved",
-    },
-    MAINTENANCE: {
-      bg: "bg-[#F59E0B]/10",
-      text: "text-[#F59E0B]",
-      label: "Maintenance",
-    },
-    UNAVAILABLE: {
-      bg: "bg-[#EF4444]/10",
-      text: "text-[#EF4444]",
-      label: "Unavailable",
-    },
-  };
-
-  const handleStatusToggle = (id: string) => {
-    const updated = facilities.map((f) => {
-      if (f.id === id) {
-        const nextStatus: Facility["status"] = f.status === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
-        return { ...f, status: nextStatus };
-      }
-      return f;
-    });
-    setFacilities(updated);
-    localStorage.setItem("cityparkon_facilities", JSON.stringify(updated));
-  };
 
   const handleStartEdit = (game: Facility) => {
     setEditingFacilityId(game.id);
@@ -1116,7 +1081,7 @@ export default function ParksClient() {
                         onChange={(val) => setAmenitySportType(val)}
                         placeholder="Select Sport"
                         className="w-full"
-                        size="med"
+                        size="medium"
                         options={categories.map((cat) => ({ label: cat, value: cat }))}
                       />
                     </div>
