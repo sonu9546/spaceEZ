@@ -15,11 +15,12 @@ export default function DashboardClient() {
     const stored = getStoredFacilities();
     setFacilities(stored);
     if (stored.length > 0) {
-      const activeFac = stored.find(f => f.id === selectedId) || stored[0];
+      const activeFac = stored.find((f) => f.id === selectedId) || stored[0];
       setSelectedId(activeFac.id);
       setSelectedParkName(activeFac.name.split(" - ")[0] || activeFac.name);
     } else {
-      const activeFac = mockFacilities.find(f => f.id === selectedId) || mockFacilities[0];
+      const activeFac =
+        mockFacilities.find((f) => f.id === selectedId) || mockFacilities[0];
       setSelectedId(activeFac.id);
       setSelectedParkName(activeFac.name.split(" - ")[0] || activeFac.name);
     }
@@ -64,16 +65,19 @@ export default function DashboardClient() {
 
   // Filter parks based on search query
   const filteredGroupedParks = React.useMemo(() => {
-    return groupedParks.filter(park =>
-      park.name.toLowerCase().includes(parkSearchQuery.toLowerCase()) ||
-      park.address.toLowerCase().includes(parkSearchQuery.toLowerCase())
+    return groupedParks.filter(
+      (park) =>
+        park.name.toLowerCase().includes(parkSearchQuery.toLowerCase()) ||
+        park.address.toLowerCase().includes(parkSearchQuery.toLowerCase()),
     );
   }, [groupedParks, parkSearchQuery]);
 
   const activeParkFacilities = React.useMemo(() => {
     if (!selectedParkName) return [];
     const list = facilities.length ? facilities : mockFacilities;
-    return list.filter(f => (f.name.split(" - ")[0] || f.name) === selectedParkName);
+    return list.filter(
+      (f) => (f.name.split(" - ")[0] || f.name) === selectedParkName,
+    );
   }, [facilities, selectedParkName]);
 
   const selectedFacility =
@@ -207,7 +211,9 @@ export default function DashboardClient() {
                     <span className="text-xs font-semibold text-[#545f73] uppercase tracking-wider">
                       {kpi.title}
                     </span>
-                    <div className={`${kpi.bg} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0`}>
+                    <div
+                      className={`${kpi.bg} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0`}
+                    >
                       <span
                         className={`material-symbols-outlined ${kpi.color} text-xl flex items-center justify-center w-6 h-6 overflow-hidden shrink-0`}
                       >
@@ -236,7 +242,8 @@ export default function DashboardClient() {
                     Managed Park Locations
                   </h4>
                   <p className="text-xs text-[#545f73]">
-                    Click on a park to inspect its active amenities and configurations.
+                    Click on a park to inspect its active amenities and
+                    configurations.
                   </p>
                 </div>
                 <div className="relative w-64">
@@ -267,7 +274,10 @@ export default function DashboardClient() {
                   <tbody className="divide-y divide-[#bdcaba]/10 text-xs">
                     {filteredGroupedParks.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
+                        <td
+                          colSpan={4}
+                          className="px-4 py-8 text-center text-slate-400"
+                        >
                           No matching parks found.
                         </td>
                       </tr>
@@ -275,10 +285,15 @@ export default function DashboardClient() {
                       filteredGroupedParks.map((park) => {
                         const isSelected = selectedParkName === park.name;
                         // Get rate range for display
-                        const rates = park.facilities.map(f => f.pricePerHour);
+                        const rates = park.facilities.map(
+                          (f) => f.pricePerHour,
+                        );
                         const minRate = Math.min(...rates);
                         const maxRate = Math.max(...rates);
-                        const rateString = minRate === maxRate ? `$${minRate.toFixed(2)}/hr` : `$${minRate.toFixed(2)} - $${maxRate.toFixed(2)}/hr`;
+                        const rateString =
+                          minRate === maxRate
+                            ? `$${minRate.toFixed(2)}/hr`
+                            : `$${minRate.toFixed(2)} - $${maxRate.toFixed(2)}/hr`;
 
                         return (
                           <tr
@@ -291,7 +306,9 @@ export default function DashboardClient() {
                               }
                             }}
                             className={`hover:bg-slate-50 transition-colors cursor-pointer ${
-                              isSelected ? "bg-[#eff4ff]/60 font-semibold text-[#006b2c]" : "text-slate-700"
+                              isSelected
+                                ? "bg-[#eff4ff]/60 font-semibold text-[#006b2c]"
+                                : "text-slate-700"
                             }`}
                           >
                             <td className="px-4 py-3.5">
@@ -317,7 +334,10 @@ export default function DashboardClient() {
                             </td>
                             <td className="px-4 py-3.5">
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-800 border border-slate-200">
-                                {park.facilities.length} {park.facilities.length === 1 ? 'amenity' : 'amenities'}
+                                {park.facilities.length}{" "}
+                                {park.facilities.length === 1
+                                  ? "amenity"
+                                  : "amenities"}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 font-bold">

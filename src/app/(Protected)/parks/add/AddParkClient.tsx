@@ -60,6 +60,35 @@ export default function AddParkClient() {
   const modalMapInstanceRef = React.useRef<any>(null);
   const modalMarkerRef = React.useRef<any>(null);
 
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Dynamically load Google Maps script
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -742,7 +771,19 @@ export default function AddParkClient() {
             <label className="block text-xs font-bold text-[#0b1c30] uppercase">
               Upload Image (if any)
             </label>
-            <div className="border-2 border-dashed border-[#bdcaba]/60 rounded-xl p-5 text-center bg-[#F8FAFC] hover:bg-slate-50 transition-colors flex flex-col items-center justify-center cursor-pointer">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="border-2 border-dashed border-[#bdcaba]/60 rounded-xl p-5 text-center bg-[#F8FAFC] hover:bg-slate-50 transition-colors flex flex-col items-center justify-center cursor-pointer"
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
               {coverPhoto ? (
                 <div className="relative w-full h-32 rounded-lg overflow-hidden border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -755,6 +796,7 @@ export default function AddParkClient() {
                     onClick={(e) => {
                       e.stopPropagation();
                       setCoverPhoto(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                   >
@@ -843,7 +885,7 @@ export default function AddParkClient() {
             className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all text-[#545f73] hover:bg-[#eff4ff]/60 hover:text-[#0b1c30] active:scale-95"
           >
             <span className="material-symbols-outlined text-base">
-              arrow_back
+              arrow_back 
             </span>
             Back to Directory
           </button>

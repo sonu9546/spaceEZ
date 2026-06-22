@@ -503,309 +503,474 @@ export default function ParksClient() {
       {/* Main Content Area */}
       <div className="flex-1 ml-[260px] flex flex-col min-h-screen">
         {/* Header */}
-        <CityParkHeader />
-
-        {/* Dashboard Main container */}
-        <main className="p-8 flex gap-8 flex-1">
-          {/* LEFT: Parks Grid and Filters */}
-          <div className="flex-1 space-y-6">
-            {/* Page Header */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
-                  Venues Directory
-                </h2>
-                <p className="text-xs text-[#545f73] mt-1">
-                  Manage venue fields, view booking rates, and configure check-in
-                  codes.
-                </p>
-              </div>
-            </div>
-
-            {/* KPI Cards Row */}
-            <div className="grid grid-cols-2 gap-6">
-              {[
-                {
-                  title: "Total Venues",
-                  valNode: <AnimatedCounter key={refreshParksKey} value={groupedParks.length} />,
-                  change: "+3 this month",
-                  icon: "\uEA63",
-                  color: "text-emerald-600",
-                  bg: "bg-emerald-50",
-                  onRefresh: handleRefreshParks,
-                  isRefreshing: isRefreshingParks,
-                },
-                {
-                  title: "Total Amenities",
-                  valNode: <AnimatedCounter key={refreshAmenitiesKey} value={facilities.length} />,
-                  change: "+8 this month",
-                  icon: "sports_soccer",
-                  color: "text-indigo-600",
-                  bg: "bg-indigo-50",
-                  onRefresh: handleRefreshAmenities,
-                  isRefreshing: isRefreshingAmenities,
-                },
-              ].map((kpi, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-white p-5 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md transition-all duration-300 relative group"
+        <CityParkHeader
+          showSearch={!showAddAmenityModal}
+          stepNavigation={
+            showAddAmenityModal ? (
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowAddAmenityModal(false)}
+                  className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 font-bold text-xs transition-all active:scale-95 border border-slate-200 px-3 py-1.5 rounded-lg bg-white shadow-sm"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs font-semibold text-[#545f73] uppercase tracking-wider">
-                      {kpi.title}
+                  <span className="material-symbols-outlined text-sm font-bold">arrow_back</span>
+                  Back to Directory
+                </button>
+                <div className="h-4 w-px bg-[#bdcaba]/30" />
+                <span className="text-xs uppercase tracking-wider font-extrabold text-[#006b2c]">
+                  Add New Amenity to {modalTargetParkName}
+                </span>
+              </div>
+            ) : undefined
+          }
+        />
+
+        {showAddAmenityModal ? (
+          /* Add Amenity Page Layout (Same as Add Venue Wizard) */
+          <main className="p-8 flex-1 flex flex-col pt-24 pb-28">
+            <div className="grid grid-cols-12 gap-8 w-full flex-1">
+              {/* Left Column: Form Fields */}
+              <div className="col-span-5 bg-white p-8 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_10px_rgba(0,0,0,0.01)] space-y-6 flex flex-col justify-between">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold text-[#0b1c30] border-b border-[#bdcaba]/20 pb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
+                      1
                     </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          kpi.onRefresh();
-                        }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                        title="Refresh"
-                      >
-                        <motion.span
-                          animate={{ rotate: kpi.isRefreshing ? 360 : 0 }}
-                          transition={{ repeat: kpi.isRefreshing ? Infinity : 0, duration: 1, ease: "linear" }}
-                          className="material-symbols-outlined text-sm"
-                        >
-                          refresh
-                        </motion.span>
-                      </button>
-                      <div className={`${kpi.bg} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0`}>
-                        <span
-                          className={`material-symbols-outlined ${kpi.color} text-xl flex items-center justify-center w-6 h-6 overflow-hidden shrink-0`}
-                        >
-                          {kpi.icon}
-                        </span>
+                    Amenity Details
+                  </h3>
+
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Sport Type */}
+                    <div className="col-span-6 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Sport Type</label>
+                      <Select
+                        value={amenitySportType || undefined}
+                        onChange={(val) => setAmenitySportType(val)}
+                        placeholder="Select Sport"
+                        className="w-full text-slate-700 font-semibold custom-antd-select"
+                        size="large"
+                        options={categories.map((cat) => ({ label: cat, value: cat }))}
+                      />
+                    </div>
+
+                    {/* Ground or Court Name */}
+                    <div className="col-span-6 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Ground or Court Name</label>
+                      <input
+                        type="text"
+                        value={amenityName}
+                        onChange={(e) => setAmenityName(e.target.value)}
+                        placeholder="e.g. West Wing Cricket Ground"
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Opening Time */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Opening Time</label>
+                      <input
+                        type="time"
+                        value={amenityOpeningTime}
+                        onChange={(e) => setAmenityOpeningTime(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all font-semibold"
+                      />
+                    </div>
+
+                    {/* Closing Time */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Closing Time</label>
+                      <input
+                        type="time"
+                        value={amenityClosingTime}
+                        onChange={(e) => setAmenityClosingTime(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all font-semibold"
+                      />
+                    </div>
+
+                    {/* Price Per Hour */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Price Per Hour ($)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                        <input
+                          type="number"
+                          value={amenityPrice || ""}
+                          onChange={(e) => setAmenityPrice(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl pl-7 pr-4 py-3 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all text-right font-semibold"
+                        />
                       </div>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
-                    {kpi.valNode}
-                  </h3>
-                  <p className="text-xs text-[#16A34A] font-medium mt-1 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs flex items-center justify-center w-4 h-4 shrink-0">
-                      {"\uE5D8"}
-                    </span>
-                    {kpi.change}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
 
-            {/* Filter Bar */}
-            <div className="bg-white p-4 rounded-xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1 min-w-[280px]">
-                <div className="relative flex-1">
-                  <span className="material-symbols-outlined text-slate-400 text-sm absolute left-3 top-1/2 -translate-y-1/2">
-                    search
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search parks by name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full text-xs pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c] transition-colors"
+                  {/* Guidelines */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-[#0b1c30] uppercase">Guidelines &amp; Safety Rules</label>
+                    <textarea
+                      value={amenityGuidelines}
+                      onChange={(e) => setAmenityGuidelines(e.target.value)}
+                      placeholder="Add rules (shoes requirement, deposit rules, guest capacity)..."
+                      rows={5}
+                      className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all resize-none font-semibold"
+                    />
+                  </div>
+
+                  {/* Latitude / Longitude Manual input */}
+                  <div className="grid grid-cols-2 gap-3 text-xs font-mono pt-4 border-t border-[#bdcaba]/20">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Latitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={amenityLat !== undefined ? amenityLat : ""}
+                        onChange={(e) => handleLatChange(parseFloat(e.target.value) || 0)}
+                        placeholder="e.g. 41.8781"
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-3 py-2.5 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Longitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={amenityLng !== undefined ? amenityLng : ""}
+                        onChange={(e) => handleLngChange(parseFloat(e.target.value) || 0)}
+                        placeholder="e.g. -87.6298"
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-3 py-2.5 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-6 border-t border-[#bdcaba]/20 mt-6">
+                  <button
+                    onClick={() => setShowAddAmenityModal(false)}
+                    className="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-[#545f73] hover:bg-slate-50 transition-all active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNewAmenity}
+                    disabled={!amenityName.trim()}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-md text-white ${
+                      amenityName.trim()
+                        ? "bg-[#006b2c] hover:bg-[#005221]"
+                        : "bg-slate-300 cursor-not-allowed"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-xs font-bold">check</span>
+                    Save Amenity
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: Locational Preview Map */}
+              <div className="col-span-7 bg-white p-6 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_10px_rgba(0,0,0,0.01)] space-y-4 flex flex-col">
+                <div className="flex justify-between items-center pb-2 border-b border-[#bdcaba]/20">
+                  <h4 className="text-xs font-bold text-[#0b1c30] uppercase flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
+                      2
+                    </span>
+                    Locational Preview
+                  </h4>
+                  {amenityPlaced ? (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider animate-bounce">
+                      Placed
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-100 text-amber-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                      Default Location
+                    </span>
+                  )}
+                </div>
+                <div className="h-[520px] rounded-xl overflow-hidden relative border bg-slate-100 flex-1">
+                  <div ref={modalMapRef} className="w-full h-full" />
+                  {!isMapScriptLoaded && (
+                    <div className="absolute inset-0 bg-[#0b1c30]/10 flex flex-col items-center justify-center gap-3">
+                      <div className="w-8 h-8 border-4 border-[#006b2c] border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-bold text-[#0b1c30]">
+                        Loading satellite map...
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </main>
+        ) : (
+          /* Normal Dashboard Main Container */
+          <main className="p-8 flex gap-8 flex-1">
+            {/* LEFT: Parks Grid and Filters */}
+            <div className="flex-1 space-y-6">
+              {/* Page Header */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
+                    Venues Directory
+                  </h2>
+                  <p className="text-xs text-[#545f73] mt-1">
+                    Manage venue fields, view booking rates, and configure check-in
+                    codes.
+                  </p>
+                </div>
+              </div>
+
+              {/* KPI Cards Row */}
+              <div className="grid grid-cols-2 gap-6">
+                {[
+                  {
+                    title: "Total Venues",
+                    valNode: <AnimatedCounter key={refreshParksKey} value={groupedParks.length} />,
+                    change: "+3 this month",
+                    icon: "\uEA63",
+                    color: "text-emerald-600",
+                    bg: "bg-emerald-50",
+                    onRefresh: handleRefreshParks,
+                    isRefreshing: isRefreshingParks,
+                  },
+                  {
+                    title: "Total Amenities",
+                    valNode: <AnimatedCounter key={refreshAmenitiesKey} value={facilities.length} />,
+                    change: "+8 this month",
+                    icon: "sports_soccer",
+                    color: "text-indigo-600",
+                    bg: "bg-indigo-50",
+                    onRefresh: handleRefreshAmenities,
+                    isRefreshing: isRefreshingAmenities,
+                  },
+                ].map((kpi, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="bg-white p-5 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md transition-all duration-300 relative group"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-semibold text-[#545f73] uppercase tracking-wider">
+                        {kpi.title}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            kpi.onRefresh();
+                          }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                          title="Refresh"
+                        >
+                          <motion.span
+                            animate={{ rotate: kpi.isRefreshing ? 360 : 0 }}
+                            transition={{ repeat: kpi.isRefreshing ? Infinity : 0, duration: 1, ease: "linear" }}
+                            className="material-symbols-outlined text-sm"
+                          >
+                            refresh
+                          </motion.span>
+                        </button>
+                        <div className={`${kpi.bg} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0`}>
+                          <span
+                            className={`material-symbols-outlined ${kpi.color} text-xl flex items-center justify-center w-6 h-6 overflow-hidden shrink-0`}
+                          >
+                            {kpi.icon}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
+                      {kpi.valNode}
+                    </h3>
+                    <p className="text-xs text-[#16A34A] font-medium mt-1 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs flex items-center justify-center w-4 h-4 shrink-0">
+                        {"\uE5D8"}
+                      </span>
+                      {kpi.change}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Filter Bar */}
+              <div className="bg-white p-4 rounded-xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-[280px]">
+                  <div className="relative flex-1">
+                    <span className="material-symbols-outlined text-slate-400 text-sm absolute left-3 top-1/2 -translate-y-1/2">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Search parks by name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full text-xs pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c] transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Select
+                    value={sportFilter}
+                    onChange={(val) => setSportFilter(val)}
+                    className="min-w-[130px]"
+                    options={[
+                      { label: "All Sports", value: "ALL" },
+                      ...categories.map((cat) => ({ label: cat, value: cat.toUpperCase() }))
+                    ]}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Select
-                  value={sportFilter}
-                  onChange={(val) => setSportFilter(val)}
-                  className="min-w-[130px]"
-                  options={[
-                    { label: "All Sports", value: "ALL" },
-                    ...categories.map((cat) => ({ label: cat, value: cat.toUpperCase() }))
-                  ]}
-                />
-              </div>
-            </div>
-
-            {/* Parks Listing Table */}
-            <div className="bg-white rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-[#bdcaba]/20 text-[10px] font-bold text-[#545f73] uppercase tracking-wider">
-                      <th className="px-6 py-4">Venue Name / Location</th>
-                      <th className="px-6 py-4">Amenities</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#bdcaba]/10 text-xs">
-                    {filteredParks.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-6 py-12 text-center text-slate-400"
-                        >
-                          <span className="material-symbols-outlined text-4xl block mb-2 text-slate-300">
-                            inventory_2
-                          </span>
-                          No matching venues found.
-                        </td>
+              {/* Parks Listing Table */}
+              <div className="bg-white rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#bdcaba]/20 text-[10px] font-bold text-[#545f73] uppercase tracking-wider">
+                        <th className="px-6 py-4">Venue Name / Location</th>
+                        <th className="px-6 py-4">Amenities</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
-                    ) : (
-                      filteredParks.map((park) => {
-                        const isSelected = selectedParkName === park.name;
-
-                        return (
-                          <tr
-                            key={park.id}
-                            onClick={() => setSelectedParkName(isSelected ? null : park.name)}
-                            className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${
-                              isSelected ? "bg-[#eff4ff]/35" : ""
-                            }`}
+                    </thead>
+                    <tbody className="divide-y divide-[#bdcaba]/10 text-xs">
+                      {filteredParks.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-6 py-12 text-center text-slate-400"
                           >
-                            <td className="px-6 py-4.5">
-                              <div className="flex items-center gap-3">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0"
-                                  src={park.imageUrl}
-                                  alt={park.name}
-                                />
-                                <div>
-                                  <span className="font-bold text-[#0b1c30] block text-sm">
-                                    {park.name}
-                                  </span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[10px] text-[#545f73] font-medium">
-                                      {park.address}
-                                    </span>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenMapModal(park);
-                                      }}
-                                      className="text-[#006b2c] hover:text-[#005221] transition-colors p-0.5 rounded hover:bg-slate-100 flex items-center shrink-0"
-                                      title="View on Map"
-                                    >
-                                      <span className="material-symbols-outlined text-[12px] font-bold">map</span>
-                                    </button>
-                                  </div>
+                            <span className="material-symbols-outlined text-4xl block mb-2 text-slate-300">
+                              inventory_2
+                            </span>
+                            No matching venues found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredParks.map((park) => {
+                          const isSelected = selectedParkName === park.name;
+                          return (
+                            <tr
+                              key={park.name}
+                              onClick={() => {
+                                setSelectedParkName(isSelected ? null : park.name);
+                              }}
+                              className={`cursor-pointer transition-colors group ${
+                                isSelected ? "bg-slate-50/80 font-medium" : "hover:bg-slate-50/40"
+                              }`}
+                            >
+                              <td className="px-6 py-4">
+                                <div className="font-extrabold text-[#0b1c30] group-hover:text-[#006b2c] transition-colors">
+                                  {park.name}
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4.5 font-semibold text-slate-700">
-                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-800 transition-colors duration-150 border border-slate-200/80">
-                                {park.facilities.length} {park.facilities.length === 1 ? 'amenity' : 'amenities'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4.5 text-right flex justify-end gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setModalTargetParkName(park.name);
-                                  setAmenityName("");
-                                  setAmenitySportType(categories[0] || "Tennis");
-                                  setAmenityOpeningTime("08:00");
-                                  setAmenityClosingTime("22:00");
-                                  setAmenityPrice(15);
-                                  setAmenityIsAvailable(true);
-                                  setAmenityGuidelines("");
-                                  setAmenityLat(park.facilities[0]?.lat);
-                                  setAmenityLng(park.facilities[0]?.lng);
-                                  setAmenityPlaced(park.facilities[0]?.lat !== undefined);
-                                  setShowAddAmenityModal(true);
-                                }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#006b2c] hover:bg-[#005221] text-white flex items-center gap-1 shadow-sm"
-                              >
-                                <span className="material-symbols-outlined text-sm">add</span>
-                                Add Amenity
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePark(park.name);
-                                }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
-                              >
-                                <span className="material-symbols-outlined text-sm">{"\uE872"}</span>
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                                <div className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-0.5">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenMapModal(park.facilities[0]);
+                                    }}
+                                    className="hover:underline flex items-center gap-0.5"
+                                  >
+                                    <span className="material-symbols-outlined text-xs">location_on</span>
+                                    {park.facilities[0]?.address || "SpaceEZ Partner Location"}
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {park.facilities.map((fac) => {
+                                    const subname = fac.name.split(" - ")[1] || fac.name;
+                                    return (
+                                      <span
+                                        key={fac.id}
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-[#F1F5F9] rounded-lg text-[10px] font-bold text-slate-700 hover:bg-[#E2E8F0] transition-colors"
+                                      >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#006b2c]"></span>
+                                        {subname} ({fac.sportType})
+                                      </span>
+                                    );
+                                  })}
+                                  {park.facilities.length === 0 && (
+                                    <span className="text-[10px] text-slate-400 font-medium">
+                                      No amenities configured
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4  text-right">
+                                <div className="flex items-center pt-10 justify-end gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModalTargetParkName(park.name);
+                                      setAmenityName("");
+                                      setAmenitySportType(categories[0] || "Tennis");
+                                      setAmenityOpeningTime("08:00");
+                                      setAmenityClosingTime("22:00");
+                                      setAmenityPrice(15);
+                                      setAmenityIsAvailable(true);
+                                      setAmenityGuidelines("");
+                                      setAmenityLat(park.facilities[0]?.lat);
+                                      setAmenityLng(park.facilities[0]?.lng);
+                                      setAmenityPlaced(park.facilities[0]?.lat !== undefined);
+                                      setShowAddAmenityModal(true);
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#006b2c] hover:bg-[#005221] text-white flex items-center gap-1 shadow-sm"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Add Amenity
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeletePark(park.name);
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">{"\uE872"}</span>
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* RIGHT: Inspect Drawer Panel */}
-          <AnimatePresence>
-            {selectedPark && (
-              <motion.div
-                initial={{ opacity: 0, x: 50, width: 0 }}
-                animate={{ opacity: 1, x: 0, width: 420 }}
-                exit={{ opacity: 0, x: 50, width: 0 }}
-                className="shrink-0 overflow-hidden"
-              >
-                <div className="w-[420px] bg-white rounded-2xl border border-[#bdcaba]/30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-6 space-y-6 sticky top-24 max-h-[85vh] overflow-y-auto">
-                  {/* Title & Close */}
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-extrabold text-[#0b1c30] text-sm uppercase tracking-wider">
-                      Park Inspector
-                    </h3>
+            {/* RIGHT: Selected Venue Inspector Panel */}
+            <AnimatePresence>
+              {selectedPark && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="w-96 shrink-0 bg-white rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-6 overflow-hidden flex flex-col"
+                >
+                  <div className="flex justify-between pt-5 items-start border-b border-[#bdcaba]/20 pb-4">
+                    <div>
+                      <h3 className="font-extrabold text-[#0b1c30] text-base">
+                        {selectedPark.name}
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-xs">location_on</span>
+                        {selectedPark.facilities[0]?.address || "SpaceEZ Partner Location"}
+                      </p>
+                    </div>
                     <button
-                      onClick={() => {
-                        setSelectedParkName(null);
-                        setEditingFacilityId(null);
-                      }}
+                      onClick={() => setSelectedParkName(null)}
                       className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-lg">
-                        close
-                      </span>
+                      <span className="material-symbols-outlined text-base">close</span>
                     </button>
                   </div>
 
-                  {/* Photo & Status */}
-                  <div className="space-y-4">
-                    <div className="h-40 w-full rounded-xl overflow-hidden relative border border-slate-100">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        className="w-full h-full object-cover"
-                        src={selectedPark.imageUrl}
-                        alt={selectedPark.name}
-                      />
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-bold text-[#0b1c30]">
-                        {selectedPark.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <p className="text-xs text-[#545f73] font-medium">
-                          {selectedPark.address}
-                        </p>
-                        <button
-                          onClick={() => handleOpenMapModal(selectedPark)}
-                          className="text-[#006b2c] hover:text-[#005221] transition-colors p-0.5 rounded hover:bg-slate-100 flex items-center shrink-0"
-                          title="View on Map"
-                        >
-                          <span className="material-symbols-outlined text-sm font-bold">map</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-[#545f73] leading-relaxed">
-                      {selectedPark.description}
-                    </p>
-                  </div>
-
-                  {/* Section: Amenities / Facilities */}
-                  <div className="border-t border-[#bdcaba]/20 pt-4 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider">
+                  <div className="mt-6 flex-1 flex flex-col min-h-0 ">
+                    <div className="flex justify-between items-center mb-4 ">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                         Amenities ({selectedPark.facilities.length})
                       </h4>
                       <button
@@ -831,70 +996,65 @@ export default function ParksClient() {
                     </div>
 
                     {/* Amenities List */}
-                    <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    <div className="space-y-3 overflow-y-auto pr-1">
                       {selectedPark.facilities.map((game) => {
                         const isEditing = editingFacilityId === game.id;
-                        const gameSubname = game.name.split(" - ")[1] || game.name;
+                        const subname = game.name.split(" - ")[1] || game.name;
 
                         if (isEditing) {
                           return (
                             <div
                               key={game.id}
-                              className="p-3.5 rounded-xl border border-[#006b2c] bg-[#eff9f4] space-y-3 shadow-sm"
+                              className="p-3.5 rounded-xl border border-[#006b2c]/30 bg-[#006b2c]/5 space-y-3"
                             >
-                              <div>
-                                <label className="text-[9px] font-bold text-[#545f73] block mb-0.5">
-                                  Amenity/Court Name
+                              <div className="space-y-1">
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                  Ground/Court Name
                                 </label>
                                 <input
                                   type="text"
                                   value={editSubname}
                                   onChange={(e) => setEditSubname(e.target.value)}
-                                  className="w-full text-xs px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#006b2c] bg-white font-medium"
+                                  className="w-full bg-white border border-[#bdcaba]/50 rounded-lg px-2.5 py-1.5 text-xs text-[#0b1c30] focus:ring-1 focus:ring-[#006b2c] outline-none"
                                 />
                               </div>
 
                               <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="text-[9px] font-bold text-[#545f73] block mb-0.5">
+                                <div className="space-y-1">
+                                  <label className="block text-[9px] font-bold text-slate-500 uppercase">
                                     Sport Type
                                   </label>
-                                  <select
+                                  <Select
                                     value={editSportType}
-                                    onChange={(e) => setEditSportType(e.target.value)}
-                                    className="w-full text-[10px] px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#006b2c] bg-white font-medium"
-                                  >
-                                    {categories.map((cat) => (
-                                      <option key={cat} value={cat}>
-                                        {cat}
-                                      </option>
-                                    ))}
-                                  </select>
+                                    onChange={(val) => setEditSportType(val)}
+                                    size="small"
+                                    className="w-full"
+                                    options={categories.map((cat) => ({ label: cat, value: cat }))}
+                                  />
                                 </div>
-                                <div>
-                                  <label className="text-[9px] font-bold text-[#545f73] block mb-0.5">
-                                    Price / hr ($)
+                                <div className="space-y-1">
+                                  <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                    Hourly Rate ($)
                                   </label>
                                   <input
                                     type="number"
                                     value={editPrice}
-                                    onChange={(e) => setEditPrice(Number(e.target.value))}
-                                    className="w-full text-[10px] px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#006b2c] bg-white"
+                                    onChange={(e) => setEditPrice(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-white border border-[#bdcaba]/50 rounded-lg px-2.5 py-1.5 text-xs text-[#0b1c30] text-right outline-none"
                                   />
                                 </div>
                               </div>
 
-
-                              <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
+                              <div className="flex justify-end gap-2 pt-1">
                                 <button
                                   onClick={() => setEditingFacilityId(null)}
-                                  className="px-2 py-1 text-[9px] font-bold border border-slate-200 rounded bg-white text-slate-700 hover:bg-slate-50"
+                                  className="px-2.5 py-1 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-50"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={() => handleSaveEdit(game.id)}
-                                  className="px-2 py-1 text-[9px] font-bold bg-[#006b2c] text-white rounded hover:bg-[#005221]"
+                                  className="px-2.5 py-1 bg-[#006b2c] hover:bg-[#005221] text-white rounded-lg text-[10px] font-bold shadow-sm"
                                 >
                                   Save
                                 </button>
@@ -906,66 +1066,40 @@ export default function ParksClient() {
                         return (
                           <div
                             key={game.id}
-                            className="p-3.5 rounded-xl border border-slate-100 bg-white hover:border-[#bdcaba]/60 hover:bg-slate-50/50 transition-all flex flex-col gap-2.5"
+                            className="p-3 rounded-lg border border-slate-100 bg-white flex justify-between items-center group hover:border-slate-200"
                           >
-                            <div className="flex justify-between items-start gap-2">
-                              <div>
-                                <h4 className="text-xs font-bold text-[#0b1c30]">
-                                  {gameSubname}
-                                </h4>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 text-[9px] font-extrabold rounded uppercase tracking-wider">
-                                    {game.sportType}
-                                  </span>
-                                  <span className="text-[10px] text-[#545f73] font-medium">
-                                    ${game.pricePerHour.toFixed(2)}/hr
-                                  </span>
-                                </div>
+                            <div className="truncate pr-2">
+                              <div className="text-xs font-bold text-[#0b1c30] truncate">
+                                {subname}
                               </div>
-
+                              <div className="text-[10px] text-slate-500 font-medium">
+                                {game.sportType} • ${game.pricePerHour}
+                              </div>
                             </div>
-
-                            {/* Game Actions: Edit, Delete, QR Code */}
-                            <div className="flex justify-between items-center border-t border-slate-100 pt-2 text-[10px]">
-                              <span className="text-slate-400 font-medium font-mono text-[9px]">
-                                ID: {game.id}
-                              </span>
-
-                              <div className="flex items-center gap-3 font-bold text-slate-600">
-                                <button
-                                  onClick={() => setActiveQrFacility(game)}
-                                  className="hover:text-[#006b2c] flex items-center gap-0.5"
-                                  title="View QR Code"
-                                >
-                                  <span className="material-symbols-outlined text-sm">qr_code_2</span>
-                                  QR
-                                </button>
-                                <button
-                                  onClick={() => handleStartEdit(game)}
-                                  className="hover:text-[#006b2c] flex items-center gap-0.5"
-                                >
-                                  <span className="material-symbols-outlined text-sm">edit</span>
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteFacility(game.id)}
-                                  className="hover:text-red-600 flex items-center gap-0.5 text-red-500"
-                                >
-                                  <span className="material-symbols-outlined text-sm">delete</span>
-                                  Delete
-                                </button>
-                              </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleStartEdit(game)}
+                                className="p-1.5 text-slate-400 hover:text-[#006b2c] hover:bg-slate-50 rounded"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFacility(game.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">delete</span>
+                              </button>
                             </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </main>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
+        )}
       </div>
 
       {/* QR Code Modal Overlay */}
@@ -1026,212 +1160,6 @@ export default function ParksClient() {
                   className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all"
                 >
                   Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Add Amenity Modal */}
-      <AnimatePresence>
-        {showAddAmenityModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 max-w-5xl w-full flex flex-col max-h-[90vh]"
-            >
-              {/* Header */}
-              <div className="p-6 border-b border-[#bdcaba]/20 flex justify-between items-center bg-slate-50">
-                <div>
-                  <h3 className="text-lg font-bold text-[#0b1c30]">
-                    Add Amenity to {modalTargetParkName}
-                  </h3>
-                  <p className="text-xs text-[#545f73]">
-                    Configure rates, guidelines, and drop a marker to assign its physical location on the map.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddAmenityModal(false)}
-                  className="p-2 rounded-full hover:bg-slate-200 text-[#545f73] transition-colors"
-                >
-                  <span className="material-symbols-outlined text-lg">close</span>
-                </button>
-              </div>
-
-              {/* Main Content (Grid) */}
-              <div className="grid grid-cols-12 overflow-y-auto flex-1">
-                {/* Left Side: Form Details */}
-                <div className="col-span-7 p-6 space-y-6 overflow-y-auto">
-                  <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider border-b pb-2 flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
-                      1
-                    </span>
-                    Amenity Details
-                  </h4>
-
-                  <div className="grid grid-cols-12 gap-4">
-                    {/* Sport Type */}
-                    <div className="col-span-6 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Sport Type</label>
-                      <Select
-                        value={amenitySportType || undefined}
-                        onChange={(val) => setAmenitySportType(val)}
-                        placeholder="Select Sport"
-                        className="w-full"
-                        size="medium"
-                        options={categories.map((cat) => ({ label: cat, value: cat }))}
-                      />
-                    </div>
-
-                    {/* Ground or Court Name */}
-                    <div className="col-span-6 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Ground or Court Name</label>
-                      <input
-                        type="text"
-                        value={amenityName}
-                        onChange={(e) => setAmenityName(e.target.value)}
-                        placeholder="e.g. West Wing Cricket Ground"
-                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-4">
-                    {/* Opening Time */}
-                    <div className="col-span-4 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Opening Time</label>
-                      <input
-                        type="time"
-                        value={amenityOpeningTime}
-                        onChange={(e) => setAmenityOpeningTime(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
-                      />
-                    </div>
-
-                    {/* Closing Time */}
-                    <div className="col-span-4 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Closing Time</label>
-                      <input
-                        type="time"
-                        value={amenityClosingTime}
-                        onChange={(e) => setAmenityClosingTime(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
-                      />
-                    </div>
-
-                    {/* Price Per Hour */}
-                    <div className="col-span-4 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Price Per Hour ($)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                        <input
-                          type="number"
-                          value={amenityPrice || ""}
-                          onChange={(e) => setAmenityPrice(parseFloat(e.target.value) || 0)}
-                          placeholder="0.00"
-                          className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all text-right"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Guidelines */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-[#0b1c30] uppercase">Guidelines &amp; Safety Rules</label>
-                    <textarea
-                      value={amenityGuidelines}
-                      onChange={(e) => setAmenityGuidelines(e.target.value)}
-                      placeholder="Add rules (shoes requirement, deposit rules, guest capacity)..."
-                      rows={3}
-                      className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Right Side: Map Placement */}
-                <div className="col-span-5 border-l border-slate-100 p-6 flex flex-col space-y-4 bg-slate-50/50">
-                  <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider border-b pb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
-                        2
-                      </span>
-                      Map Location
-                    </span>
-                    {amenityPlaced ? (
-                      <span className="text-[9px] bg-emerald-100 text-emerald-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                        Placed
-                      </span>
-                    ) : (
-                      <span className="text-[9px] bg-amber-100 text-amber-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                        Default
-                      </span>
-                    )}
-                  </h4>
-
-                  {/* Interactive Map */}
-                  <div className="h-52 rounded-xl overflow-hidden relative border border-slate-200 bg-slate-100">
-                    <div ref={modalMapRef} className="w-full h-full" />
-                    {!isMapScriptLoaded && (
-                      <div className="absolute inset-0 bg-[#0b1c30]/10 flex flex-col items-center justify-center gap-3">
-                        <div className="w-8 h-8 border-4 border-[#006b2c] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs font-bold text-[#0b1c30]">Loading satellite workspace...</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-[11px] text-[#545f73] leading-relaxed">
-                    Click anywhere on the satellite view above or drag the pin to position the amenity.
-                  </p>
-
-                  {/* Lat & Lng manual inputs */}
-                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                    <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Latitude</label>
-                      <input
-                        type="number"
-                        step="0.000001"
-                        value={amenityLat !== undefined ? amenityLat : ""}
-                        onChange={(e) => handleLatChange(parseFloat(e.target.value) || 0)}
-                        placeholder="e.g. 41.8781"
-                        className="w-full bg-white border border-[#bdcaba]/50 rounded-xl px-3 py-2 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Longitude</label>
-                      <input
-                        type="number"
-                        step="0.000001"
-                        value={amenityLng !== undefined ? amenityLng : ""}
-                        onChange={(e) => handleLngChange(parseFloat(e.target.value) || 0)}
-                        placeholder="e.g. -87.6298"
-                        className="w-full bg-white border border-[#bdcaba]/50 rounded-xl px-3 py-2 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-6 border-t border-[#bdcaba]/20 bg-slate-50 flex items-center justify-end gap-3">
-                <button
-                  onClick={() => setShowAddAmenityModal(false)}
-                  className="px-5 py-2.5 border rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveNewAmenity}
-                  disabled={!amenityName.trim()}
-                  className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all ${
-                    amenityName.trim()
-                      ? "bg-[#006b2c] hover:bg-[#005221] active:scale-95"
-                      : "bg-slate-300 cursor-not-allowed"
-                  }`}
-                >
-                  Save Amenity
                 </button>
               </div>
             </motion.div>

@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import React from 'react'
-import Link from 'next/link'
-import { Image } from 'antd'
+import React from "react";
+import Link from "next/link";
+import { Image } from "antd";
 
 interface HeaderProps {
-  title?: string
-  showSearch?: boolean
-  stepNavigation?: React.ReactNode
+  title?: string;
+  showSearch?: boolean;
+  stepNavigation?: React.ReactNode;
 }
 
 export default function CityParkHeader({
@@ -21,11 +21,13 @@ export default function CityParkHeader({
         {stepNavigation ? (
           stepNavigation
         ) : title ? (
-          <h2 className="font-bold text-lg text-[#0b1c30]">{title}</h2>
+          <h2 className="font-bold text-lg text-[#0b1c30] ">{title}</h2>
         ) : (
           showSearch && (
             <div className="flex items-center gap-3 bg-[#eff4ff]/60 px-4 py-2 rounded-full border border-[#bdcaba]/30 w-full max-w-md focus-within:border-[#006b2c] focus-within:ring-2 focus-within:ring-[#006b2c]/20 transition-all duration-200">
-              <span className="material-symbols-outlined text-[#545f73] text-lg select-none">search</span>
+              <span className="material-symbols-outlined text-[#545f73] text-lg select-none">
+                search
+              </span>
               <input
                 className="bg-transparent border-none text-sm w-full outline-none text-[#0b1c30] placeholder-[#545f73]"
                 placeholder="Search venues or amenities..."
@@ -41,8 +43,8 @@ export default function CityParkHeader({
           href="/parks/add"
           className="bg-[#006b2c] text-white font-semibold text-sm py-2 px-5 rounded-lg hover:bg-[#00873a] transition-all active:scale-[0.98] duration-150 shadow-sm"
         >
-ADD VENUE         
-</Link>
+          ADD VENUE
+        </Link>
 
         {/* Profile Avatar */}
         <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-[#bdcaba]/40 shadow-inner">
@@ -55,5 +57,5 @@ ADD VENUE
         </div>
       </div>
     </header>
-  )
+  );
 }
