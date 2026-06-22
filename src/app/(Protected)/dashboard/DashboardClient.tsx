@@ -11,8 +11,6 @@ export default function DashboardClient() {
   const [selectedId, setSelectedId] = useState<string>("facility-1");
   const [selectedParkName, setSelectedParkName] = useState<string | null>(null);
   const [parkSearchQuery, setParkSearchQuery] = useState<string>("");
-  const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
-
   useEffect(() => {
     const stored = getStoredFacilities();
     setFacilities(stored);
@@ -25,6 +23,7 @@ export default function DashboardClient() {
       setSelectedId(activeFac.id);
       setSelectedParkName(activeFac.name.split(" - ")[0] || activeFac.name);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Dynamic counts based on loaded facilities

@@ -42,11 +42,10 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
     localStorage.setItem('cityparkon_categories', JSON.stringify(cats))
   }
 
-  const loadCategories = () => {
-    setCategories(getStoredCategories())
-  }
-
   useEffect(() => {
+    const loadCategories = () => {
+      setCategories(getStoredCategories())
+    }
     loadCategories()
     window.addEventListener('categories-changed', loadCategories)
     return () => {

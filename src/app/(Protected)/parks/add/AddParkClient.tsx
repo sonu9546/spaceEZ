@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Select, Input } from 'antd'
+import { Input } from 'antd'
 import { motion, AnimatePresence } from 'framer-motion'
 import CityParkSidebar from '../../dashboard/CityParkSidebar'
 import CityParkHeader from '../../dashboard/CityParkHeader'
@@ -491,6 +491,7 @@ export default function AddParkClient() {
         modalMarkerRef.current.setPosition(center)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapScriptLoaded, mapActiveAmenityId])
 
 
@@ -535,7 +536,7 @@ export default function AddParkClient() {
   })
 
   // Step 2 handlers
-  const handleAddAmenity = () => {
+  const _handleAddAmenity = () => {
     const newId = `amenity-${Date.now()}`
     setAmenities((prev) => [
       ...prev,
@@ -553,11 +554,11 @@ export default function AddParkClient() {
     ])
   }
 
-  const handleRemoveAmenity = (id: string) => {
+  const _handleRemoveAmenity = (id: string) => {
     setAmenities((prev) => prev.filter((a) => a.id !== id))
   }
 
-  const handleUpdateAmenity = (id: string, field: keyof AmenityInput, value: any) => {
+  const _handleUpdateAmenity = (id: string, field: keyof AmenityInput, value: any) => {
     setAmenities((prev) =>
       prev.map((a) => {
         if (a.id === id) {
@@ -568,7 +569,7 @@ export default function AddParkClient() {
     )
   }
 
-  const handleGenerateQR = (id: string) => {
+  const _handleGenerateQR = (id: string) => {
     setAmenities((prev) =>
       prev.map((a) => {
         if (a.id === id) {
@@ -627,7 +628,7 @@ export default function AddParkClient() {
     })
   }
 
-  const handlePrevStep = () => {
+  const _handlePrevStep = () => {
     if (step > 1) {
       setStep((prev) => prev - 1)
     }

@@ -294,6 +294,7 @@ export default function ParksClient() {
         setAmenityPlaced(true);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapScriptLoaded, showAddAmenityModal, modalTargetParkName]);
 
   const handleLatChange = (val: number) => {
