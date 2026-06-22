@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Select } from "antd";
+import { Select, Pagination } from "antd";
 
 
 import CityParkSidebar from "../dashboard/CityParkSidebar";
@@ -76,6 +76,14 @@ export default function ParksClient() {
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [sportFilter, setSportFilter] = useState<string>("ALL");
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sportFilter]);
 
   const searchParams = useSearchParams();
   const sportParam = searchParams ? searchParams.get("sport") : null;
@@ -422,6 +430,12 @@ export default function ParksClient() {
       return matchesSearch && matchesSport;
     });
   }, [groupedParks, searchTerm, sportFilter]);
+
+  // Paginated Parks for display limit 10
+  const paginatedParks = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredParks.slice(start, start + pageSize);
+  }, [filteredParks, currentPage, pageSize]);
 
 
   const handleStartEdit = (game: Facility) => {
@@ -846,7 +860,7 @@ export default function ParksClient() {
                           </td>
                         </tr>
                       ) : (
-                        filteredParks.map((park) => {
+                        paginatedParks.map((park) => {
                           const isSelected = selectedParkName === park.name;
                           return (
                             <tr
@@ -938,6 +952,24 @@ export default function ParksClient() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Antd Pagination */}
+                {filteredParks.length > 0 && (
+                  <div className="p-4 border-t border-[#bdcaba]/10 flex justify-between items-center bg-slate-50/50">
+                    <span className="text-xs text-slate-500 font-medium">
+                      Showing {Math.min((currentPage - 1) * pageSize + 1, filteredParks.length)} to{" "}
+                      {Math.min(currentPage * pageSize, filteredParks.length)} of {filteredParks.length} venues
+                    </span>
+                    <Pagination
+                      current={currentPage}
+                      pageSize={pageSize}
+                      total={filteredParks.length}
+                      onChange={(page) => setCurrentPage(page)}
+                      showSizeChanger={false}
+                      className="text-xs"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
