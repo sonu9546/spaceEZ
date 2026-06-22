@@ -41,8 +41,8 @@ export default function CityParkHeader({
           href="/parks/add"
           className="bg-[#006b2c] text-white font-semibold text-sm py-2 px-5 rounded-lg hover:bg-[#00873a] transition-all active:scale-[0.98] duration-150 shadow-sm"
         >
-          Quick Add
-        </Link>
+ADD PARK         
+</Link>
 
         {/* Profile Avatar */}
         <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-[#bdcaba]/40 shadow-inner">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLogout } from '@/hooks/auth/useLogout'
 import { Dropdown } from 'antd'
@@ -12,7 +12,8 @@ interface SidebarProps {
 
 export default function CityParkSidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname()
-  const [activeSport, setActiveSport] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const activeSport = searchParams.get('sport')
   const [categories, setCategories] = useState<string[]>([])
   
   // Modal states for CRUD Category operations
@@ -52,18 +53,6 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
       window.removeEventListener('categories-changed', loadCategories)
     }
   }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const sport = params.get('sport')
-      setActiveSport(sport)
-    }
-  }, [pathname])
-
-  const handleSportClick = (sport: string) => {
-    setActiveSport(sport)
-  };
 
   const handleAddCategory = () => {
     const trimmed = newCategoryName.trim()
@@ -145,7 +134,6 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
   }
 
   const navItems = [
-    { name: 'Dashboard', icon: "\uE871", href: '/dashboard' },
     { name: 'Parks', icon: "\uEA63", href: '/parks' },
     { name: 'Amenities', icon: "\uEA2F", href: '#' },
   ]
@@ -185,7 +173,6 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
                   label: (
                     <Link
                       href={`/parks?sport=${sport}`}
-                      onClick={() => handleSportClick(sport)}
                       className={`text-xs font-semibold px-2 py-1 block rounded ${
                         activeSport?.toLowerCase() === sport.toLowerCase()
                           ? 'text-[#006b2c] bg-[#eff4ff]/60 font-bold'
@@ -251,8 +238,7 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
             }
 
             const isActive =
-              (item.href === '/dashboard' && pathname === '/dashboard') ||
-              (item.href === '/parks' && pathname?.startsWith('/parks'))
+              item.href === '/parks' && pathname?.startsWith('/parks') && activeSport === null
 
             return (
               <Link

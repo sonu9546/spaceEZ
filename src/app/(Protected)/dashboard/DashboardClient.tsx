@@ -8,9 +8,23 @@ import { mockFacilities, Facility, getStoredFacilities } from "./mockData";
 
 export default function DashboardClient() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("facility-1");
+  const [selectedParkName, setSelectedParkName] = useState<string | null>(null);
+  const [parkSearchQuery, setParkSearchQuery] = useState<string>("");
+  const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
 
   useEffect(() => {
-    setFacilities(getStoredFacilities());
+    const stored = getStoredFacilities();
+    setFacilities(stored);
+    if (stored.length > 0) {
+      const activeFac = stored.find(f => f.id === selectedId) || stored[0];
+      setSelectedId(activeFac.id);
+      setSelectedParkName(activeFac.name.split(" - ")[0] || activeFac.name);
+    } else {
+      const activeFac = mockFacilities.find(f => f.id === selectedId) || mockFacilities[0];
+      setSelectedId(activeFac.id);
+      setSelectedParkName(activeFac.name.split(" - ")[0] || activeFac.name);
+    }
   }, []);
 
   // Dynamic counts based on loaded facilities
@@ -22,10 +36,46 @@ export default function DashboardClient() {
   );
   const totalParks = uniqueParks.size;
 
-  const [selectedId, setSelectedId] = useState<string>("facility-1");
-  const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
+  // Group facilities by park name
+  const groupedParks = React.useMemo(() => {
+    const groups: Record<string, Facility[]> = {};
+    const list = facilities.length ? facilities : mockFacilities;
+    list.forEach((fac) => {
+      const parkName = fac.name.split(" - ")[0] || fac.name;
+      if (!groups[parkName]) {
+        groups[parkName] = [];
+      }
+      groups[parkName].push(fac);
+    });
 
-  // Chart and statistics interactions
+    return Object.entries(groups).map(([parkName, facs]) => {
+      const firstFac = facs[0];
+      return {
+        id: `park-${parkName.toLowerCase().replace(/\s+/g, "-")}`,
+        name: parkName,
+        facilities: facs,
+        imageUrl:
+          firstFac?.imageUrl ||
+          "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=600&auto=format&fit=crop&q=80",
+        address: firstFac?.address || "SpaceEZ Park Partner • Municipal Zone",
+        description: `${parkName} is a premium community space with multiple sports and amenities, managed by SpaceEZ.`,
+      };
+    });
+  }, [facilities]);
+
+  // Filter parks based on search query
+  const filteredGroupedParks = React.useMemo(() => {
+    return groupedParks.filter(park =>
+      park.name.toLowerCase().includes(parkSearchQuery.toLowerCase()) ||
+      park.address.toLowerCase().includes(parkSearchQuery.toLowerCase())
+    );
+  }, [groupedParks, parkSearchQuery]);
+
+  const activeParkFacilities = React.useMemo(() => {
+    if (!selectedParkName) return [];
+    const list = facilities.length ? facilities : mockFacilities;
+    return list.filter(f => (f.name.split(" - ")[0] || f.name) === selectedParkName);
+  }, [facilities, selectedParkName]);
 
   const selectedFacility =
     facilities.find((f) => f.id === selectedId) ||
@@ -179,126 +229,107 @@ export default function DashboardClient() {
               ))}
             </div>
 
-            {/* Live Park Status Map */}
-            <div className="bg-white p-6 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-              <div className="flex justify-between items-center mb-4">
+            {/* Registered Parks Listing */}
+            <div className="bg-white p-6 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-4">
+              <div className="flex justify-between items-center">
                 <div>
                   <h4 className="font-bold text-base text-[#0b1c30]">
-                    Live Facility Locations Map
+                    Managed Park Locations
                   </h4>
                   <p className="text-xs text-[#545f73]">
-                    Select a marker coordinate on the map canvas to inspect that
-                    specific amenity.
+                    Click on a park to inspect its active amenities and configurations.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#16A34A]">
-                    <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>{" "}
-                    Available
+                <div className="relative w-64">
+                  <span className="material-symbols-outlined text-slate-400 text-sm absolute left-3 top-1/2 -translate-y-1/2 select-none">
+                    search
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#2563EB]">
-                    <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>{" "}
-                    Reserved
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#F59E0B]">
-                    <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>{" "}
-                    Maintenance
-                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search parks..."
+                    value={parkSearchQuery}
+                    onChange={(e) => setParkSearchQuery(e.target.value)}
+                    className="w-full text-xs pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c] transition-colors"
+                  />
                 </div>
               </div>
 
-              {/* Map Placeholder Image */}
-              <div className="h-80 w-full relative rounded-xl overflow-hidden border border-slate-200/60 shadow-inner bg-slate-50">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="w-full h-full object-cover select-none pointer-events-none border"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYphNUeWqHukKfvcOh0Dm0qowmOtooKpVwk59IALgkOlwwKYQulWu5CwocDAOiidi65iJwTRbA8x87yAtADTdGjTWQAXp4WHwO-YkBCLcMDgA56Q2pz8xfPH-pWMZmh-0l54JTep6EVcqUmjJYYm9UDi5yhDR1zH1gb6t3CDafE7BtG135W8MZjjCQ46ot4ZgucjIqB0Hc5DvU6ZpOfG9vBYgQuW-D4nQP6e7X8_WfQ6RPzoqMPrvAvAzmQcM9EgOuuWtBWPMtSoXR"
-                  alt="Live Map View"
-                />
+              {/* Parks Table/List */}
+              <div className="overflow-hidden border border-slate-100 rounded-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-[#bdcaba]/20 text-[10px] font-bold text-[#545f73] uppercase tracking-wider">
+                      <th className="px-4 py-3">Park Info</th>
+                      <th className="px-4 py-3">Operating Hours</th>
+                      <th className="px-4 py-3">Amenities Count</th>
+                      <th className="px-4 py-3">Active Rates</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#bdcaba]/10 text-xs">
+                    {filteredGroupedParks.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
+                          No matching parks found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredGroupedParks.map((park) => {
+                        const isSelected = selectedParkName === park.name;
+                        // Get rate range for display
+                        const rates = park.facilities.map(f => f.pricePerHour);
+                        const minRate = Math.min(...rates);
+                        const maxRate = Math.max(...rates);
+                        const rateString = minRate === maxRate ? `$${minRate.toFixed(2)}/hr` : `$${minRate.toFixed(2)} - $${maxRate.toFixed(2)}/hr`;
 
-                {/* Overlaid Interactive Markers */}
-                {facilities.map((fac) => {
-                  const isSelected = selectedId === fac.id;
-                  const isHovered = hoveredPinId === fac.id;
-
-                  // Map absolute placement based on mock data lat/lng values
-                  // coordinates ranges roughly 41.87 to 41.88 and -87.62 to -87.63
-                  const y = ((41.883 - fac.lat) / (41.883 - 41.868)) * 100;
-                  const x = ((fac.lng - -87.638) / (-87.618 - -87.638)) * 100;
-
-                  // Color mapping based on sport/status
-                  const pinColor =
-                    fac.status === "AVAILABLE"
-                      ? "#16A34A"
-                      : fac.status === "RESERVED"
-                        ? "#2563EB"
-                        : fac.status === "MAINTENANCE"
-                          ? "#F59E0B"
-                          : "#EF4444";
-
-                   const iconName =
-                    fac.sportType === "Tennis"
-                      ? "\uEA32"
-                      : fac.sportType === "Football"
-                        ? "\uEA2F"
-                        : fac.sportType === "Cricket"
-                          ? "\uEBE8"
-                          : fac.sportType === "Aquatics"
-                            ? "\uEB48"
-                            : "\uF83A";
-
-                  return (
-                    <div
-                      key={fac.id}
-                      className="absolute z-20 transition-transform duration-200"
-                      style={{ top: `${y}%`, left: `${x}%` }}
-                    >
-                      <button
-                        onClick={() => setSelectedId(fac.id)}
-                        onMouseEnter={() => setHoveredPinId(fac.id)}
-                        onMouseLeave={() => setHoveredPinId(null)}
-                        className={`flex flex-col items-center -translate-x-1/2 -translate-y-full relative transition-transform ${
-                          isSelected || isHovered ? "scale-115" : "scale-100"
-                        }`}
-                      >
-                        <div
-                          className="bg-white w-5 h-5 shadow-xl border-2 flex items-center justify-center rounded-md overflow-hidden shrink-0"
-                          style={{ borderColor: pinColor }}
-                        >
-                          <span
-                            className="material-symbols-outlined text-xs flex items-center justify-center w-3 h-3 overflow-hidden shrink-0"
-                            style={{
-                              color: pinColor,
-                              fontVariationSettings: "'FILL' 1",
-                              fontSize: "10px",
+                        return (
+                          <tr
+                            key={park.id}
+                            onClick={() => {
+                              setSelectedParkName(park.name);
+                              // Auto-select the first facility of this park
+                              if (park.facilities.length > 0) {
+                                setSelectedId(park.facilities[0].id);
+                              }
                             }}
+                            className={`hover:bg-slate-50 transition-colors cursor-pointer ${
+                              isSelected ? "bg-[#eff4ff]/60 font-semibold text-[#006b2c]" : "text-slate-700"
+                            }`}
                           >
-                            {iconName}
-                          </span>
-                        </div>
-                        {/* Pin needle */}
-                        <div
-                          className="w-1.5 h-1.5 rounded-full bg-white border shadow-md -mt-0.5"
-                          style={{ borderColor: pinColor }}
-                        ></div>
-
-                        {/* Hover Tooltip */}
-                        <AnimatePresence>
-                          {(isHovered || isSelected) && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.9, y: 5 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              className="absolute bg-[#0b1c30] text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg -top-10 whitespace-nowrap z-30"
-                            >
-                              {fac.name}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </button>
-                    </div>
-                  );
-                })}
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  className="w-10 h-10 rounded-lg object-cover border border-slate-100 shrink-0"
+                                  src={park.imageUrl}
+                                  alt={park.name}
+                                />
+                                <div className="min-w-0">
+                                  <span className="font-bold text-[#0b1c30] block text-xs truncate max-w-[180px]">
+                                    {park.name}
+                                  </span>
+                                  <span className="text-[10px] text-[#545f73] truncate block max-w-[180px] font-normal">
+                                    {park.address}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-[#545f73] font-medium">
+                              06:00 AM - 10:00 PM
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-800 border border-slate-200">
+                                {park.facilities.length} {park.facilities.length === 1 ? 'amenity' : 'amenities'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 font-bold">
+                              {rateString}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -350,6 +381,33 @@ export default function DashboardClient() {
                   <p className="text-xs text-[#545f73] leading-relaxed">
                     {selectedFacility.description}
                   </p>
+
+                  {/* Amenities selector for the active park */}
+                  {activeParkFacilities.length > 1 && (
+                    <div className="space-y-2 pt-2">
+                      <h4 className="text-[10px] font-extrabold text-[#0b1c30] uppercase tracking-wider">
+                        Park Amenities ({activeParkFacilities.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeParkFacilities.map((fac) => {
+                          const isCurrent = fac.id === selectedId;
+                          return (
+                            <button
+                              key={fac.id}
+                              onClick={() => setSelectedId(fac.id)}
+                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                                isCurrent
+                                  ? "bg-[#006b2c] border-[#006b2c] text-white shadow-sm"
+                                  : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              {fac.name.split(" - ")[1] || fac.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Switch Actions */}

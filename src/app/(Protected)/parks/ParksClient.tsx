@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Select } from "antd";
 
 
 import CityParkSidebar from "../dashboard/CityParkSidebar";
@@ -14,6 +15,39 @@ import {
 import { useAppQuery } from "@/tanstack/useAppQuery";
 import { QUERY_KEYS } from "@/tanstack/keys";
 import { useSearchParams } from "next/navigation";
+
+function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const end = value;
+    if (end === 0) {
+      setCount(0);
+      return;
+    }
+    const totalMilliseconds = duration;
+    const incrementTime = Math.max(Math.floor(totalMilliseconds / end), 15);
+    const startTime = Date.now();
+
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / totalMilliseconds, 1);
+      const easeProgress = progress * (2 - progress); // Ease out quad
+      const current = Math.floor(easeProgress * end);
+      
+      setCount(current);
+
+      if (progress >= 1) {
+        setCount(end);
+        clearInterval(timer);
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return <>{count}</>;
+}
 
 export default function ParksClient() {
   // Fetch facilities using our TanStack query hook
@@ -53,6 +87,28 @@ export default function ParksClient() {
       setSportFilter("ALL");
     }
   }, [sportParam]);
+
+  // Refresh & Animation states for KPI cards
+  const [refreshParksKey, setRefreshParksKey] = useState(0);
+  const [refreshAmenitiesKey, setRefreshAmenitiesKey] = useState(0);
+  const [isRefreshingParks, setIsRefreshingParks] = useState(false);
+  const [isRefreshingAmenities, setIsRefreshingAmenities] = useState(false);
+
+  const handleRefreshParks = () => {
+    setIsRefreshingParks(true);
+    setRefreshParksKey(prev => prev + 1);
+    const loaded = getStoredFacilities();
+    setFacilities(loaded);
+    setTimeout(() => setIsRefreshingParks(false), 1000);
+  };
+
+  const handleRefreshAmenities = () => {
+    setIsRefreshingAmenities(true);
+    setRefreshAmenitiesKey(prev => prev + 1);
+    const loaded = getStoredFacilities();
+    setFacilities(loaded);
+    setTimeout(() => setIsRefreshingAmenities(false), 1000);
+  };
 
   // Selected Park state
   const [selectedParkName, setSelectedParkName] = useState<string | null>(null);
@@ -124,12 +180,184 @@ export default function ParksClient() {
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editStatus, setEditStatus] = useState<"AVAILABLE" | "UNAVAILABLE" | "MAINTENANCE" | "RESERVED">("AVAILABLE");
 
-  // Add Facility States
-  const [showAddGameForm, setShowAddGameForm] = useState(false);
-  const [newGameSubname, setNewGameSubname] = useState("");
-  const [newGameSportType, setNewGameSportType] = useState<string>("Tennis");
-  const [newGamePrice, setNewGamePrice] = useState<number>(15);
   const [activeQrFacility, setActiveQrFacility] = useState<Facility | null>(null);
+
+  // Google Maps State & Coordinates for Add Amenity Modal
+  const [isMapScriptLoaded, setIsMapScriptLoaded] = useState(false);
+  const modalMapRef = React.useRef<HTMLDivElement | null>(null);
+  const modalMapInstanceRef = React.useRef<any>(null);
+  const modalMarkerRef = React.useRef<any>(null);
+
+  // Add Amenity Modal States
+  const [showAddAmenityModal, setShowAddAmenityModal] = useState(false);
+  const [modalTargetParkName, setModalTargetParkName] = useState<string>("");
+  
+  // Form fields
+  const [amenitySportType, setAmenitySportType] = useState<string>("Tennis");
+  const [amenityName, setAmenityName] = useState<string>("");
+  const [amenityMaxPlayers, setAmenityMaxPlayers] = useState<number>(10);
+  const [amenityPrice, setAmenityPrice] = useState<number>(15);
+  const [amenityIsAvailable, setAmenityIsAvailable] = useState<boolean>(true);
+  const [amenityGuidelines, setAmenityGuidelines] = useState<string>("");
+  const [amenityLat, setAmenityLat] = useState<number | undefined>(undefined);
+  const [amenityLng, setAmenityLng] = useState<number | undefined>(undefined);
+  const [amenityPlaced, setAmenityPlaced] = useState<boolean>(false);
+
+  // Dynamically load Google Maps script
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if ((window as any).google && (window as any).google.maps) {
+      setIsMapScriptLoaded(true);
+      return;
+    }
+
+    const existingScript = document.getElementById("google-maps-script");
+    if (existingScript) {
+      const handleLoad = () => setIsMapScriptLoaded(true);
+      existingScript.addEventListener("load", handleLoad);
+      return () => {
+        existingScript.removeEventListener("load", handleLoad);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsMapScriptLoaded(true);
+    script.onerror = () => console.error("Google Maps API failed to load.");
+    
+    document.body.appendChild(script);
+  }, []);
+
+  // Initialize and update Modal Map
+  useEffect(() => {
+    if (!isMapScriptLoaded || !modalMapRef.current || !showAddAmenityModal) {
+      modalMapInstanceRef.current = null;
+      modalMarkerRef.current = null;
+      return;
+    }
+
+    const google = (window as any).google;
+    if (!google || !google.maps) return;
+
+    // Find center based on active park facilities, or default to some coordinates
+    const parkFacilities = facilities.filter((f) => {
+      const pName = f.name.split(" - ")[0] || f.name;
+      return pName === modalTargetParkName;
+    });
+    
+    const initialLat = amenityLat !== undefined ? amenityLat : (parkFacilities[0]?.lat ?? 41.8781);
+    const initialLng = amenityLng !== undefined ? amenityLng : (parkFacilities[0]?.lng ?? -87.6298);
+    const center = { lat: initialLat, lng: initialLng };
+
+    // Always create a new map instance to avoid container reuse issues
+    const map = new google.maps.Map(modalMapRef.current, {
+      center,
+      zoom: 17,
+      mapTypeId: "hybrid",
+      mapTypeControl: true,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+    modalMapInstanceRef.current = map;
+
+    const marker = new google.maps.Marker({
+      position: center,
+      map: map,
+      draggable: true,
+      title: "Amenity Location",
+    });
+    modalMarkerRef.current = marker;
+
+    // Add click to place pin
+    map.addListener("click", (e: any) => {
+      const clickedLat = e.latLng.lat();
+      const clickedLng = e.latLng.lng();
+      marker.setPosition(e.latLng);
+      setAmenityLat(clickedLat);
+      setAmenityLng(clickedLng);
+      setAmenityPlaced(true);
+    });
+
+    // Add dragend to place pin
+    marker.addListener("dragend", () => {
+      const pos = marker.getPosition();
+      if (pos) {
+        const dragLat = pos.lat();
+        const dragLng = pos.lng();
+        setAmenityLat(dragLat);
+        setAmenityLng(dragLng);
+        setAmenityPlaced(true);
+      }
+    });
+  }, [isMapScriptLoaded, showAddAmenityModal, modalTargetParkName]);
+
+  const handleLatChange = (val: number) => {
+    setAmenityLat(val);
+    setAmenityPlaced(true);
+    const google = (window as any).google;
+    if (google && modalMarkerRef.current && modalMapInstanceRef.current) {
+      const newPos = { lat: val, lng: amenityLng ?? -87.6298 };
+      modalMarkerRef.current.setPosition(newPos);
+      modalMapInstanceRef.current.setCenter(newPos);
+    }
+  };
+
+  const handleLngChange = (val: number) => {
+    setAmenityLng(val);
+    setAmenityPlaced(true);
+    const google = (window as any).google;
+    if (google && modalMarkerRef.current && modalMapInstanceRef.current) {
+      const newPos = { lat: amenityLat ?? 41.8781, lng: val };
+      modalMarkerRef.current.setPosition(newPos);
+      modalMapInstanceRef.current.setCenter(newPos);
+    }
+  };
+
+  const handleSaveNewAmenity = () => {
+    if (!amenityName.trim() || !modalTargetParkName) return;
+    
+    // Fallback coordinates
+    const targetParkFacilities = facilities.filter((f) => {
+      const pName = f.name.split(" - ")[0] || f.name;
+      return pName === modalTargetParkName;
+    });
+    
+    const latVal = amenityLat !== undefined ? amenityLat : (targetParkFacilities[0]?.lat ?? 41.8781);
+    const lngVal = amenityLng !== undefined ? amenityLng : (targetParkFacilities[0]?.lng ?? -87.6298);
+
+    const newGame: Facility = {
+      id: `facility-new-${Date.now()}`,
+      name: `${modalTargetParkName} - ${amenityName}`,
+      sportType: amenitySportType,
+      pricePerHour: Number(amenityPrice),
+      status: amenityIsAvailable ? "AVAILABLE" : "UNAVAILABLE",
+      activeBookings: 0,
+      imageUrl: targetParkFacilities[0]?.imageUrl || "https://images.unsplash.com/photo-1595182595000-5fdec0129a8c?w=600&auto=format&fit=crop&q=80",
+      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=checkin-${Date.now()}`,
+      lat: latVal,
+      lng: lngVal,
+      description: `${amenitySportType} • ${amenityGuidelines || "Standard amenity rules apply."}`,
+      address: targetParkFacilities[0]?.address || "SpaceEZ Park Partner • Municipal Zone",
+      recentLogs: [
+        {
+          id: `log-${Date.now()}`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          text: `Amenity ${amenityName} added to ${modalTargetParkName}`,
+          type: "success",
+        },
+      ],
+    };
+
+    const updated = [...facilities, newGame];
+    setFacilities(updated);
+    localStorage.setItem("cityparkon_facilities", JSON.stringify(updated));
+    setShowAddAmenityModal(false);
+  };
 
   // Filter Logic based on grouped parks
   const filteredParks = React.useMemo(() => {
@@ -223,36 +451,7 @@ export default function ParksClient() {
     localStorage.setItem("cityparkon_facilities", JSON.stringify(updated));
   };
 
-  const handleAddGame = () => {
-    if (!newGameSubname.trim() || !selectedParkName) return;
-    const newGame: Facility = {
-      id: `facility-new-${Date.now()}`,
-      name: `${selectedParkName} - ${newGameSubname}`,
-      sportType: newGameSportType,
-      pricePerHour: Number(newGamePrice),
-      status: "AVAILABLE",
-      activeBookings: 0,
-      imageUrl: "https://images.unsplash.com/photo-1595182595000-5fdec0129a8c?w=600&auto=format&fit=crop&q=80",
-      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=checkin-${Date.now()}`,
-      lat: selectedPark?.facilities[0]?.lat ?? 37.7749,
-      lng: selectedPark?.facilities[0]?.lng ?? -122.4194,
-      description: `${newGameSportType} field located in ${selectedParkName}`,
-      recentLogs: [
-        {
-          id: `log-${Date.now()}`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `Amenity facility added to ${selectedParkName}`,
-          type: "success"
-        }
-      ]
-    };
 
-    const updated = [...facilities, newGame];
-    setFacilities(updated);
-    localStorage.setItem("cityparkon_facilities", JSON.stringify(updated));
-    setShowAddGameForm(false);
-    setNewGameSubname("");
-  };
 
   // Handle PNG download
   const handleDownloadQR = async (name: string, url: string) => {
@@ -313,6 +512,80 @@ export default function ParksClient() {
                   codes.
                 </p>
               </div>
+            </div>
+
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-2 gap-6">
+              {[
+                {
+                  title: "Total Parks",
+                  valNode: <AnimatedCounter key={refreshParksKey} value={groupedParks.length} />,
+                  change: "+3 this month",
+                  icon: "\uEA63",
+                  color: "text-emerald-600",
+                  bg: "bg-emerald-50",
+                  onRefresh: handleRefreshParks,
+                  isRefreshing: isRefreshingParks,
+                },
+                {
+                  title: "Total Amenities",
+                  valNode: <AnimatedCounter key={refreshAmenitiesKey} value={facilities.length} />,
+                  change: "+8 this month",
+                  icon: "sports_soccer",
+                  color: "text-indigo-600",
+                  bg: "bg-indigo-50",
+                  onRefresh: handleRefreshAmenities,
+                  isRefreshing: isRefreshingAmenities,
+                },
+              ].map((kpi, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white p-5 rounded-2xl border border-[#bdcaba]/30 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md transition-all duration-300 relative group"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-xs font-semibold text-[#545f73] uppercase tracking-wider">
+                      {kpi.title}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          kpi.onRefresh();
+                        }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                        title="Refresh"
+                      >
+                        <motion.span
+                          animate={{ rotate: kpi.isRefreshing ? 360 : 0 }}
+                          transition={{ repeat: kpi.isRefreshing ? Infinity : 0, duration: 1, ease: "linear" }}
+                          className="material-symbols-outlined text-sm"
+                        >
+                          refresh
+                        </motion.span>
+                      </button>
+                      <div className={`${kpi.bg} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0`}>
+                        <span
+                          className={`material-symbols-outlined ${kpi.color} text-xl flex items-center justify-center w-6 h-6 overflow-hidden shrink-0`}
+                        >
+                          {kpi.icon}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
+                    {kpi.valNode}
+                  </h3>
+                  <p className="text-xs text-[#16A34A] font-medium mt-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs flex items-center justify-center w-4 h-4 shrink-0">
+                      {"\uE5D8"}
+                    </span>
+                    {kpi.change}
+                  </p>
+                </motion.div>
+              ))}
             </div>
 
             {/* Filter Bar */}
@@ -407,7 +680,27 @@ export default function ParksClient() {
                                 {park.facilities.length} {park.facilities.length === 1 ? 'amenity' : 'amenities'}
                               </span>
                             </td>
-                            <td className="px-6 py-4.5 text-right flex justify-end">
+                            <td className="px-6 py-4.5 text-right flex justify-end gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setModalTargetParkName(park.name);
+                                  setAmenityName("");
+                                  setAmenitySportType(categories[0] || "Tennis");
+                                  setAmenityMaxPlayers(10);
+                                  setAmenityPrice(15);
+                                  setAmenityIsAvailable(true);
+                                  setAmenityGuidelines("");
+                                  setAmenityLat(park.facilities[0]?.lat);
+                                  setAmenityLng(park.facilities[0]?.lng);
+                                  setAmenityPlaced(park.facilities[0]?.lat !== undefined);
+                                  setShowAddAmenityModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#006b2c] hover:bg-[#005221] text-white flex items-center gap-1 shadow-sm"
+                              >
+                                <span className="material-symbols-outlined text-sm">add</span>
+                                Add Amenity
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -448,7 +741,6 @@ export default function ParksClient() {
                       onClick={() => {
                         setSelectedParkName(null);
                         setEditingFacilityId(null);
-                        setShowAddGameForm(false);
                       }}
                       className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
                     >
@@ -489,82 +781,26 @@ export default function ParksClient() {
                       <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider">
                         Amenities ({selectedPark.facilities.length})
                       </h4>
-                      {!showAddGameForm && (
-                        <button
-                          onClick={() => setShowAddGameForm(true)}
-                          className="text-[10px] font-bold text-[#006b2c] hover:underline flex items-center gap-0.5"
-                        >
-                          <span className="material-symbols-outlined text-xs">add</span>
-                          Add Amenity
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          setModalTargetParkName(selectedPark.name);
+                          setAmenityName("");
+                          setAmenitySportType(categories[0] || "Tennis");
+                          setAmenityMaxPlayers(10);
+                          setAmenityPrice(15);
+                          setAmenityIsAvailable(true);
+                          setAmenityGuidelines("");
+                          setAmenityLat(selectedPark.facilities[0]?.lat);
+                          setAmenityLng(selectedPark.facilities[0]?.lng);
+                          setAmenityPlaced(selectedPark.facilities[0]?.lat !== undefined);
+                          setShowAddAmenityModal(true);
+                        }}
+                        className="text-[10px] font-bold text-[#006b2c] hover:underline flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-xs">add</span>
+                        Add Amenity
+                      </button>
                     </div>
-
-                    {/* Add Amenity Form Inline */}
-                    {showAddGameForm && (
-                      <div className="p-4 rounded-xl border border-dashed border-[#bdcaba]/60 bg-slate-50/50 space-y-3">
-                        <h5 className="text-[11px] font-bold text-[#0b1c30] uppercase tracking-wider">
-                          New Amenity Facility
-                        </h5>
-                        <div className="space-y-2">
-                          <div>
-                            <label className="text-[10px] font-bold text-[#545f73] block mb-1">
-                              Name (e.g. Squash Court 1)
-                            </label>
-                            <input
-                              type="text"
-                              value={newGameSubname}
-                              onChange={(e) => setNewGameSubname(e.target.value)}
-                              placeholder="e.g. Squash Court 1"
-                              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c]"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] font-bold text-[#545f73] block mb-1">
-                                Sport Type
-                              </label>
-                              <select
-                                value={newGameSportType}
-                                onChange={(e) => setNewGameSportType(e.target.value)}
-                                className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c] bg-white font-medium"
-                              >
-                                {categories.map((cat) => (
-                                  <option key={cat} value={cat}>
-                                    {cat}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-[#545f73] block mb-1">
-                                Price per Hour ($)
-                              </label>
-                              <input
-                                type="number"
-                                value={newGamePrice}
-                                onChange={(e) => setNewGamePrice(Number(e.target.value))}
-                                className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006b2c]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2 pt-1">
-                          <button
-                            onClick={() => setShowAddGameForm(false)}
-                            className="px-2.5 py-1.5 text-[10px] font-bold border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleAddGame}
-                            className="px-2.5 py-1.5 text-[10px] font-bold bg-[#006b2c] text-white rounded-lg hover:bg-[#005221]"
-                          >
-                            Add Amenity
-                          </button>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Amenities List */}
                     <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
@@ -797,6 +1033,201 @@ export default function ParksClient() {
                   className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all"
                 >
                   Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Amenity Modal */}
+      <AnimatePresence>
+        {showAddAmenityModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 max-w-5xl w-full flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-[#bdcaba]/20 flex justify-between items-center bg-slate-50">
+                <div>
+                  <h3 className="text-lg font-bold text-[#0b1c30]">
+                    Add Amenity to {modalTargetParkName}
+                  </h3>
+                  <p className="text-xs text-[#545f73]">
+                    Configure rates, guidelines, and drop a marker to assign its physical location on the map.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddAmenityModal(false)}
+                  className="p-2 rounded-full hover:bg-slate-200 text-[#545f73] transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+
+              {/* Main Content (Grid) */}
+              <div className="grid grid-cols-12 overflow-y-auto flex-1">
+                {/* Left Side: Form Details */}
+                <div className="col-span-7 p-6 space-y-6 overflow-y-auto">
+                  <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider border-b pb-2 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
+                      1
+                    </span>
+                    Amenity Details
+                  </h4>
+
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Sport Type */}
+                    <div className="col-span-6 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Sport Type</label>
+                      <Select
+                        value={amenitySportType || undefined}
+                        onChange={(val) => setAmenitySportType(val)}
+                        placeholder="Select Sport"
+                        className="w-full"
+                        size="large"
+                        options={categories.map((cat) => ({ label: cat, value: cat }))}
+                      />
+                    </div>
+
+                    {/* Ground or Court Name */}
+                    <div className="col-span-6 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Ground or Court Name</label>
+                      <input
+                        type="text"
+                        value={amenityName}
+                        onChange={(e) => setAmenityName(e.target.value)}
+                        placeholder="e.g. West Wing Cricket Ground"
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Max Players */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Max Players</label>
+                      <input
+                        type="number"
+                        value={amenityMaxPlayers}
+                        onChange={(e) => setAmenityMaxPlayers(parseInt(e.target.value) || 0)}
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Price Per Hour */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Price Per Hour ($)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                        <input
+                          type="number"
+                          value={amenityPrice || ""}
+                          onChange={(e) => setAmenityPrice(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl pl-7 pr-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all text-right"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guidelines */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-[#0b1c30] uppercase">Guidelines &amp; Safety Rules</label>
+                    <textarea
+                      value={amenityGuidelines}
+                      onChange={(e) => setAmenityGuidelines(e.target.value)}
+                      placeholder="Add rules (shoes requirement, deposit rules, guest capacity)..."
+                      rows={3}
+                      className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Right Side: Map Placement */}
+                <div className="col-span-5 border-l border-slate-100 p-6 flex flex-col space-y-4 bg-slate-50/50">
+                  <h4 className="text-xs font-extrabold text-[#0b1c30] uppercase tracking-wider border-b pb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#006b2c]/10 text-[#006b2c] flex items-center justify-center text-xs font-bold">
+                        2
+                      </span>
+                      Map Location
+                    </span>
+                    {amenityPlaced ? (
+                      <span className="text-[9px] bg-emerald-100 text-emerald-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        Placed
+                      </span>
+                    ) : (
+                      <span className="text-[9px] bg-amber-100 text-amber-700 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
+                        Default
+                      </span>
+                    )}
+                  </h4>
+
+                  {/* Interactive Map */}
+                  <div className="h-52 rounded-xl overflow-hidden relative border border-slate-200 bg-slate-100">
+                    <div ref={modalMapRef} className="w-full h-full" />
+                    {!isMapScriptLoaded && (
+                      <div className="absolute inset-0 bg-[#0b1c30]/10 flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-[#006b2c] border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs font-bold text-[#0b1c30]">Loading satellite workspace...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-[#545f73] leading-relaxed">
+                    Click anywhere on the satellite view above or drag the pin to position the amenity.
+                  </p>
+
+                  {/* Lat & Lng manual inputs */}
+                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Latitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={amenityLat !== undefined ? amenityLat : ""}
+                        onChange={(e) => handleLatChange(parseFloat(e.target.value) || 0)}
+                        placeholder="e.g. 41.8781"
+                        className="w-full bg-white border border-[#bdcaba]/50 rounded-xl px-3 py-2 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-[#545f73] uppercase font-sans">Longitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={amenityLng !== undefined ? amenityLng : ""}
+                        onChange={(e) => handleLngChange(parseFloat(e.target.value) || 0)}
+                        placeholder="e.g. -87.6298"
+                        className="w-full bg-white border border-[#bdcaba]/50 rounded-xl px-3 py-2 text-sm text-[#0b1c30] outline-none focus:ring-1 focus:ring-[#006b2c]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-[#bdcaba]/20 bg-slate-50 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowAddAmenityModal(false)}
+                  className="px-5 py-2.5 border rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNewAmenity}
+                  disabled={!amenityName.trim()}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all ${
+                    amenityName.trim()
+                      ? "bg-[#006b2c] hover:bg-[#005221] active:scale-95"
+                      : "bg-slate-300 cursor-not-allowed"
+                  }`}
+                >
+                  Save Amenity
                 </button>
               </div>
             </motion.div>
