@@ -11,6 +11,8 @@ export interface Facility {
   lng: number;
   description: string;
   address?: string;
+  openingTime?: string;
+  closingTime?: string;
   recentLogs: Array<{
     id: string;
     time: string;

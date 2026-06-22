@@ -171,3 +171,25 @@ button[class*="bg-emerald"] {
 .ant-btn-primary {
   color: #ffffff !important;
 }
+
+/* ========================================================
+   GOOGLE MAPS DEVELOPMENT WATERMARK & POPUP REMOVAL HACKS
+======================================================== */
+.gm-err-container {
+  display: none !important;
+}
+
+.gm-style-cc {
+  display: none !important;
+}
+
+/* Force original colors and full opacity on map tiles to bypass gray overlay */
+.gm-style div {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Hide watermark dialog popups */
+.gm-err-container, .gm-err-autocomplete, .gm-style iframe + div {
+  display: none !important;
+}

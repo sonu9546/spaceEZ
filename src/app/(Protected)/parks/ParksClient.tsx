@@ -133,8 +133,10 @@ export default function ParksClient() {
         imageUrl:
           firstFac?.imageUrl ||
           "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=600&auto=format&fit=crop&q=80",
-        address: firstFac?.address || "SpaceEZ Park Partner • Municipal Zone",
+        address: firstFac?.address || "SpaceEZ Venue Partner • Municipal Zone",
         description: `${parkName} is a premium community space with multiple sports and amenities, managed by SpaceEZ.`,
+        lat: firstFac?.lat || 41.8781,
+        lng: firstFac?.lng || -87.6298,
       };
     });
   }, [facilities]);
@@ -195,13 +197,19 @@ export default function ParksClient() {
   // Form fields
   const [amenitySportType, setAmenitySportType] = useState<string>("Tennis");
   const [amenityName, setAmenityName] = useState<string>("");
-  const [amenityMaxPlayers, setAmenityMaxPlayers] = useState<number>(10);
+  const [amenityOpeningTime, setAmenityOpeningTime] = useState<string>("08:00");
+  const [amenityClosingTime, setAmenityClosingTime] = useState<string>("22:00");
   const [amenityPrice, setAmenityPrice] = useState<number>(15);
   const [amenityIsAvailable, setAmenityIsAvailable] = useState<boolean>(true);
   const [amenityGuidelines, setAmenityGuidelines] = useState<string>("");
   const [amenityLat, setAmenityLat] = useState<number | undefined>(undefined);
   const [amenityLng, setAmenityLng] = useState<number | undefined>(undefined);
   const [amenityPlaced, setAmenityPlaced] = useState<boolean>(false);
+
+  // Large Map Modal States
+  const [showLargeMapModal, setShowLargeMapModal] = useState<boolean>(false);
+  const [largeMapTarget, setLargeMapTarget] = useState<any>(null);
+  const largeMapContainerRef = React.useRef<HTMLDivElement | null>(null);
 
   // Dynamically load Google Maps script
   useEffect(() => {
@@ -297,6 +305,38 @@ export default function ParksClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapScriptLoaded, showAddAmenityModal, modalTargetParkName]);
 
+  // Initialize and update Large Map Modal
+  useEffect(() => {
+    if (!isMapScriptLoaded || !largeMapContainerRef.current || !showLargeMapModal || !largeMapTarget) {
+      return;
+    }
+
+    const google = (window as any).google;
+    if (!google || !google.maps) return;
+
+    const center = { lat: largeMapTarget.lat, lng: largeMapTarget.lng };
+
+    const map = new google.maps.Map(largeMapContainerRef.current, {
+      center,
+      zoom: 17,
+      mapTypeId: "hybrid",
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true,
+    });
+
+    new google.maps.Marker({
+      position: center,
+      map: map,
+      title: largeMapTarget.name,
+    });
+  }, [isMapScriptLoaded, showLargeMapModal, largeMapTarget]);
+
+  const handleOpenMapModal = (target: any) => {
+    setLargeMapTarget(target);
+    setShowLargeMapModal(true);
+  };
+
   const handleLatChange = (val: number) => {
     setAmenityLat(val);
     setAmenityPlaced(true);
@@ -344,6 +384,8 @@ export default function ParksClient() {
       lng: lngVal,
       description: `${amenitySportType} • ${amenityGuidelines || "Standard amenity rules apply."}`,
       address: targetParkFacilities[0]?.address || "SpaceEZ Park Partner • Municipal Zone",
+      openingTime: amenityOpeningTime,
+      closingTime: amenityClosingTime,
       recentLogs: [
         {
           id: `log-${Date.now()}`,
@@ -506,10 +548,10 @@ export default function ParksClient() {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#0b1c30] tracking-tight">
-                  Parks Directory
+                  Venues Directory
                 </h2>
                 <p className="text-xs text-[#545f73] mt-1">
-                  Manage park fields, view booking rates, and configure check-in
+                  Manage venue fields, view booking rates, and configure check-in
                   codes.
                 </p>
               </div>
@@ -519,7 +561,7 @@ export default function ParksClient() {
             <div className="grid grid-cols-2 gap-6">
               {[
                 {
-                  title: "Total Parks",
+                  title: "Total Venues",
                   valNode: <AnimatedCounter key={refreshParksKey} value={groupedParks.length} />,
                   change: "+3 this month",
                   icon: "\uEA63",
@@ -607,18 +649,15 @@ export default function ParksClient() {
               </div>
 
               <div className="flex items-center gap-3">
-                <select
+                <Select
                   value={sportFilter}
-                  onChange={(e) => setSportFilter(e.target.value)}
-                  className="text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#006b2c] text-slate-700 font-semibold"
-                >
-                  <option value="ALL">All Sports</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat.toUpperCase()}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSportFilter(val)}
+                  className="min-w-[130px]"
+                  options={[
+                    { label: "All Sports", value: "ALL" },
+                    ...categories.map((cat) => ({ label: cat, value: cat.toUpperCase() }))
+                  ]}
+                />
               </div>
             </div>
 
@@ -628,7 +667,7 @@ export default function ParksClient() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-[#bdcaba]/20 text-[10px] font-bold text-[#545f73] uppercase tracking-wider">
-                      <th className="px-6 py-4">Park Name / Location</th>
+                      <th className="px-6 py-4">Venue Name / Location</th>
                       <th className="px-6 py-4">Amenities</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -643,7 +682,7 @@ export default function ParksClient() {
                           <span className="material-symbols-outlined text-4xl block mb-2 text-slate-300">
                             inventory_2
                           </span>
-                          No matching parks found.
+                          No matching venues found.
                         </td>
                       </tr>
                     ) : (
@@ -670,9 +709,21 @@ export default function ParksClient() {
                                   <span className="font-bold text-[#0b1c30] block text-sm">
                                     {park.name}
                                   </span>
-                                  <span className="text-[10px] text-[#545f73] font-medium">
-                                    {park.address}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[10px] text-[#545f73] font-medium">
+                                      {park.address}
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenMapModal(park);
+                                      }}
+                                      className="text-[#006b2c] hover:text-[#005221] transition-colors p-0.5 rounded hover:bg-slate-100 flex items-center shrink-0"
+                                      title="View on Map"
+                                    >
+                                      <span className="material-symbols-outlined text-[12px] font-bold">map</span>
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -688,7 +739,8 @@ export default function ParksClient() {
                                   setModalTargetParkName(park.name);
                                   setAmenityName("");
                                   setAmenitySportType(categories[0] || "Tennis");
-                                  setAmenityMaxPlayers(10);
+                                  setAmenityOpeningTime("08:00");
+                                  setAmenityClosingTime("22:00");
                                   setAmenityPrice(15);
                                   setAmenityIsAvailable(true);
                                   setAmenityGuidelines("");
@@ -766,9 +818,18 @@ export default function ParksClient() {
                       <h3 className="text-lg font-bold text-[#0b1c30]">
                         {selectedPark.name}
                       </h3>
-                      <p className="text-xs text-[#545f73] mt-1 font-medium">
-                        {selectedPark.address}
-                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <p className="text-xs text-[#545f73] font-medium">
+                          {selectedPark.address}
+                        </p>
+                        <button
+                          onClick={() => handleOpenMapModal(selectedPark)}
+                          className="text-[#006b2c] hover:text-[#005221] transition-colors p-0.5 rounded hover:bg-slate-100 flex items-center shrink-0"
+                          title="View on Map"
+                        >
+                          <span className="material-symbols-outlined text-sm font-bold">map</span>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-xs text-[#545f73] leading-relaxed">
@@ -787,7 +848,8 @@ export default function ParksClient() {
                           setModalTargetParkName(selectedPark.name);
                           setAmenityName("");
                           setAmenitySportType(categories[0] || "Tennis");
-                          setAmenityMaxPlayers(10);
+                          setAmenityOpeningTime("08:00");
+                          setAmenityClosingTime("22:00");
                           setAmenityPrice(15);
                           setAmenityIsAvailable(true);
                           setAmenityGuidelines("");
@@ -857,21 +919,6 @@ export default function ParksClient() {
                                 </div>
                               </div>
 
-                              <div>
-                                <label className="text-[9px] font-bold text-[#545f73] block mb-0.5">
-                                  Status
-                                </label>
-                                <select
-                                  value={editStatus}
-                                  onChange={(e) => setEditStatus(e.target.value as any)}
-                                  className="w-full text-[10px] px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#006b2c] bg-white font-medium"
-                                >
-                                  <option value="AVAILABLE">Available</option>
-                                  <option value="RESERVED">Reserved</option>
-                                  <option value="MAINTENANCE">Maintenance</option>
-                                  <option value="UNAVAILABLE">Unavailable</option>
-                                </select>
-                              </div>
 
                               <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
                                 <button
@@ -911,26 +958,6 @@ export default function ParksClient() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                                    statusStyles[game.status].bg
-                                  } ${statusStyles[game.status].text}`}
-                                >
-                                  {statusStyles[game.status].label}
-                                </span>
-
-                                {/* Quick toggle status */}
-                                <label className="relative inline-flex items-center cursor-pointer select-none">
-                                  <input
-                                    type="checkbox"
-                                    checked={game.status === "AVAILABLE" || game.status === "RESERVED"}
-                                    onChange={() => handleStatusToggle(game.id)}
-                                    className="sr-only peer"
-                                  />
-                                  <div className="w-8 h-4.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height-3.5 after:width-3.5 after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-[#006b2c]"></div>
-                                </label>
-                              </div>
                             </div>
 
                             {/* Game Actions: Edit, Delete, QR Code */}
@@ -1089,7 +1116,7 @@ export default function ParksClient() {
                         onChange={(val) => setAmenitySportType(val)}
                         placeholder="Select Sport"
                         className="w-full"
-                        size="large"
+                        size="med"
                         options={categories.map((cat) => ({ label: cat, value: cat }))}
                       />
                     </div>
@@ -1108,13 +1135,24 @@ export default function ParksClient() {
                   </div>
 
                   <div className="grid grid-cols-12 gap-4">
-                    {/* Max Players */}
+                    {/* Opening Time */}
                     <div className="col-span-4 space-y-2">
-                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Max Players</label>
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Opening Time</label>
                       <input
-                        type="number"
-                        value={amenityMaxPlayers}
-                        onChange={(e) => setAmenityMaxPlayers(parseInt(e.target.value) || 0)}
+                        type="time"
+                        value={amenityOpeningTime}
+                        onChange={(e) => setAmenityOpeningTime(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Closing Time */}
+                    <div className="col-span-4 space-y-2">
+                      <label className="block text-xs font-bold text-[#0b1c30] uppercase">Closing Time</label>
+                      <input
+                        type="time"
+                        value={amenityClosingTime}
+                        onChange={(e) => setAmenityClosingTime(e.target.value)}
                         className="w-full bg-[#F8FAFC] border border-[#bdcaba]/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#006b2c] focus:border-[#006b2c] text-sm text-[#0b1c30] outline-none transition-all"
                       />
                     </div>
@@ -1229,6 +1267,65 @@ export default function ParksClient() {
                   }`}
                 >
                   Save Amenity
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Large Map Modal */}
+      <AnimatePresence>
+        {showLargeMapModal && largeMapTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b1c30]/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl w-full max-w-4xl shadow-xl overflow-hidden border border-[#bdcaba]/30 flex flex-col"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-[#bdcaba]/20 flex justify-between items-center bg-[#F8FAFC]">
+                <div>
+                  <h3 className="font-extrabold text-[#0b1c30] text-base">
+                    {largeMapTarget.name} - Location Map
+                  </h3>
+                  <p className="text-xs text-[#545f73] mt-1 font-medium">
+                    {largeMapTarget.address}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowLargeMapModal(false);
+                    setLargeMapTarget(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
+              </div>
+
+              {/* Map Container */}
+              <div className="h-[500px] w-full bg-slate-100 relative">
+                <div ref={largeMapContainerRef} className="w-full h-full" />
+                {!isMapScriptLoaded && (
+                  <div className="absolute inset-0 bg-[#0b1c30]/10 flex flex-col items-center justify-center gap-3">
+                    <div className="w-8 h-8 border-4 border-[#006b2c] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-[#0b1c30]">Loading map...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 border-t border-[#bdcaba]/20 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowLargeMapModal(false);
+                    setLargeMapTarget(null);
+                  }}
+                  className="px-6 py-2 bg-[#006b2c] hover:bg-[#005221] text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>

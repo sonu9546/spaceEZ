@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, className })
         {
             key: ROUTES.PRIVATE.ADD_PARK,
             icon: <PlusCircleOutlined />,
-            label: 'Add New Park',
+            label: 'Add New Venue',
         },
     ]
 

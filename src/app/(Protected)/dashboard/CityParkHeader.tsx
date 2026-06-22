@@ -28,7 +28,7 @@ export default function CityParkHeader({
               <span className="material-symbols-outlined text-[#545f73] text-lg select-none">search</span>
               <input
                 className="bg-transparent border-none text-sm w-full outline-none text-[#0b1c30] placeholder-[#545f73]"
-                placeholder="Search parks or amenities..."
+                placeholder="Search venues or amenities..."
                 type="text"
               />
             </div>
@@ -41,7 +41,7 @@ export default function CityParkHeader({
           href="/parks/add"
           className="bg-[#006b2c] text-white font-semibold text-sm py-2 px-5 rounded-lg hover:bg-[#00873a] transition-all active:scale-[0.98] duration-150 shadow-sm"
         >
-ADD PARK         
+ADD VENUE         
 </Link>
 
         {/* Profile Avatar */}

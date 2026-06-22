@@ -133,7 +133,7 @@ export default function CityParkSidebar({ className = '' }: SidebarProps) {
   }
 
   const navItems = [
-    { name: 'Parks', icon: "\uEA63", href: '/parks' },
+    { name: 'Venues', icon: "\uEA63", href: '/parks' },
     { name: 'Amenities', icon: "\uEA2F", href: '#' },
   ]
 
